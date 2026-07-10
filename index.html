@@ -265,7 +265,6 @@ import {
 } from './js/tide-parser.js';
 import {
   RIVER_STATIONS,
-  axisTicks,
   calculateRiverAxis,
   normalizeRiverPayload,
   riverSeriesForWindow
@@ -552,12 +551,17 @@ function getNowMarkerInfo() {
   return { minute, label: `${pad(now.getHours())}:${pad(now.getMinutes())}` };
 }
 
+function formatMeters(cm) {
+  const v = cm / 100;
+  return Number.isInteger(v) ? String(v) : v.toFixed(1);
+}
+
 function drawChart() {
   const W = chart.width;
   const H = chart.height;
   ctx.clearRect(0, 0, W, H);
   const hasRiver = currentRiverSeries.length >= 2;
-  const m = {left: 96, right: hasRiver ? 108 : 28, top: 56, bottom: 76};
+  const m = {left: 64, right: 20, top: 56, bottom: 76};
   const plotW = W - m.left - m.right;
   const plotH = H - m.top - m.bottom;
 
@@ -617,22 +621,17 @@ function drawChart() {
     ctx.stroke();
 
     ctx.fillStyle = textMuted;
-    ctx.font = '28px sans-serif';
+    ctx.font = '20px sans-serif';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'middle';
-    ctx.fillText(`${val}`, m.left - 12, y);
+    ctx.fillText(formatMeters(val), m.left - 8, y);
   });
 
-  if (currentRiverAxis) {
-    axisTicks(currentRiverAxis.min, currentRiverAxis.max).forEach(value => {
-      const y = yFromRiverLevel(value);
-      ctx.fillStyle = riverColor;
-      ctx.font = '24px sans-serif';
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(value.toFixed(2), W - m.right + 12, y);
-    });
-  }
+  ctx.fillStyle = textMuted;
+  ctx.font = '16px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'bottom';
+  ctx.fillText('(m)', m.left, m.top - 4);
 
   const xStep = dayCount === 1 ? 3 : 6;
   const maxHour = dayCount * 24;
