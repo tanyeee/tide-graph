@@ -812,7 +812,11 @@ function drawChart() {
     ctx.fillText(jpDate(addDays(dateInput.value, 1)), xFromMinute(36 * 60), 14);
   }
 
-  drawSunMoonBands(xFromMinute);
+  try {
+    drawSunMoonBands(xFromMinute);
+  } catch (error) {
+    console.warn('Failed to draw sun/moon bands; skipping.', error);
+  }
 
   ctx.strokeStyle = lineColor;
   ctx.lineWidth = 4;
