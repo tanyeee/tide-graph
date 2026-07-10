@@ -66,6 +66,7 @@
   .sub, .legend, .note { color:var(--muted); line-height:1.7; }
   .sub { margin-top:18px; }
   .legend { font-size:14px; margin-top:16px; }
+  .legend.chart-legend { margin-top:8px; margin-bottom:4px; }
   .note { margin-top:12px; font-size:14px; }
   .data-status[data-state="error"], .river-status[data-state="error"] { color:#dc2626; font-weight:700; }
   .data-status[data-state="warning"], .river-status[data-state="warning"] { color:#d97706; font-weight:700; }
@@ -203,6 +204,10 @@
       <button id="btnNext60" class="double" type="button" aria-label="1時間後">≫</button>
     </div>
 
+    <div class="legend chart-legend">
+      <span class="swatch tide"></span>左軸：天文潮位（m）　<span class="swatch river"></span>河川水位（縦スケール自動調整）
+    </div>
+
     <div class="range-row">
       <div class="field">
         <label>表示範囲</label>
@@ -250,7 +255,7 @@
     <div id="riverStatus" class="note river-status" role="status" aria-live="polite"></div>
     <div class="sub">日付を選ぶと、1日または2日分の潮位変動を表示できます。河川水位は縦方向だけを自動調整し、山や谷が現れる時刻のずれを比較しやすくしています。グラフをクリックまたはタップすると、その時刻の値を表示します。</div>
     <div class="legend">
-      <span class="swatch tide"></span>左軸：天文潮位（cm）　<span class="swatch river"></span>右軸：河川水位（m）　横軸：時刻（JST）。右軸は表示中の両波形の5〜95パーセンタイルが縦方向に合うよう自動調整します。時刻は移動していません。両軸は基準面が異なるため、絶対的な高さの比較には使用できません。<br>
+      <span class="swatch tide"></span>左軸：天文潮位（m）　<span class="swatch river"></span>河川水位（縦スケール自動調整）　横軸：時刻（JST）。河川水位は表示中の両波形の5〜95パーセンタイルが縦方向に合うよう自動調整します。時刻は移動していません。両軸は基準面が異なるため、絶対的な高さの比較には使用できません。<br>
       潮位の10分値は気象庁の毎時潮位から直線補間した天文潮位で、潮名は月齢に基づく目安です。出典：<a href="https://www.data.jma.go.jp/kaiyou/db/tide/suisan/suisan.php?stn=D1" target="_blank" rel="noopener noreferrer">気象庁「潮位表 日立」</a>、<a href="https://tanyeee.github.io/kuji-waterlevel/" target="_blank" rel="noopener noreferrer">国土交通省データを利用した久慈川水位ビューア</a>
     </div>
   </div>
