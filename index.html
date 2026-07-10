@@ -274,6 +274,11 @@ import {
   normalizeRiverPayload,
   riverSeriesForWindow
 } from './js/river-water-level.js';
+import { getTimes, getMoonTimes } from './js/suncalc.js';
+
+// Observation point: JMA tide station D1 (日立 / Hitachi), 36°30'N 140°38'E.
+const SUN_MOON_LAT = 36.5;
+const SUN_MOON_LON = 140.6333;
 
 let tideData = [];
 let dataMap = {};
@@ -561,12 +566,139 @@ function formatMeters(cm) {
   return Number.isInteger(v) ? String(v) : v.toFixed(1);
 }
 
+function formatClock(date) {
+  return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+function minuteOfLocalDay(date) {
+  if (!date) return null;
+  return date.getHours() * 60 + date.getMinutes() + date.getSeconds() / 60;
+}
+
+// Sun times anchored to local (JST) solar noon so the returned sunrise/sunset
+// fall on the requested calendar date (SunCalc.getTimes anchors to the input
+// Date's day, so noon keeps us clear of the UTC/JST day-boundary mismatch).
+function getLocalSunTimes(dateStr) {
+  const noon = new Date(`${dateStr}T12:00:00+09:00`);
+  return getTimes(noon, SUN_MOON_LAT, SUN_MOON_LON);
+}
+
+// SunCalc.getMoonTimes scans a fixed UTC calendar day, which does not line up
+// with a JST calendar day (JST = UTC+9). To find the rise/set events that fall
+// within a given JST date, query the UTC day containing that date's start and
+// the UTC day before it, then keep whichever events land inside the JST
+// [00:00, 24:00) window for that date.
+function getLocalMoonTimes(dateStr) {
+  const localStart = new Date(`${dateStr}T00:00:00+09:00`);
+  const localEnd = new Date(localStart.getTime() + 24 * 60 * 60 * 1000);
+  const utcDayStart = new Date(`${dateStr}T00:00:00Z`);
+  const utcDayPrev = new Date(utcDayStart.getTime() - 24 * 60 * 60 * 1000);
+
+  const mtCurr = getMoonTimes(utcDayStart, SUN_MOON_LAT, SUN_MOON_LON);
+  const mtPrev = getMoonTimes(utcDayPrev, SUN_MOON_LAT, SUN_MOON_LON);
+
+  const rises = [];
+  const sets = [];
+  for (const mt of [mtPrev, mtCurr]) {
+    if (mt.rise && mt.rise >= localStart && mt.rise < localEnd) rises.push(mt.rise);
+    if (mt.set && mt.set >= localStart && mt.set < localEnd) sets.push(mt.set);
+  }
+
+  const rise = rises.length ? new Date(Math.min(...rises.map(d => d.getTime()))) : null;
+  const set = sets.length ? new Date(Math.min(...sets.map(d => d.getTime()))) : null;
+  let alwaysUp = false;
+  let alwaysDown = false;
+  if (!rise && !set) {
+    alwaysUp = !!(mtCurr.alwaysUp ?? mtPrev.alwaysUp);
+    alwaysDown = !!(mtCurr.alwaysDown ?? mtPrev.alwaysDown);
+  }
+  return { rise, set, alwaysUp, alwaysDown };
+}
+
+// Returns the "above horizon" minute-of-day interval(s) [0,1440) for a rise/set
+// pair. Handles the case where the body was already up at day start and sets
+// before it rises again the same day (set < rise): that yields two segments,
+// [0, set] and [rise, 1440]. alwaysUp/alwaysDown cover the no-event case.
+function computeUpIntervals(riseMinute, setMinute, alwaysUp) {
+  if (riseMinute == null && setMinute == null) {
+    return alwaysUp ? [[0, 1440]] : [];
+  }
+  if (riseMinute != null && setMinute != null) {
+    if (riseMinute <= setMinute) return [[riseMinute, setMinute]];
+    return [[0, setMinute], [riseMinute, 1440]];
+  }
+  if (riseMinute != null) return [[riseMinute, 1440]];
+  return [[0, setMinute]];
+}
+
+const SUN_MOON_BAND_H = 13;
+const SUN_MOON_MOON_Y = 20;
+const SUN_MOON_SUN_Y = SUN_MOON_MOON_Y + SUN_MOON_BAND_H + 2;
+
+function drawSunMoonBand(xFromMinute, dayOffsetMin, y, color, icon, riseDate, setDate, alwaysUp) {
+  const intervals = computeUpIntervals(
+    minuteOfLocalDay(riseDate),
+    minuteOfLocalDay(setDate),
+    alwaysUp
+  );
+  ctx.save();
+  ctx.fillStyle = color;
+  ctx.globalAlpha = 0.85;
+  intervals.forEach(([a, b]) => {
+    const x1 = xFromMinute(dayOffsetMin + a);
+    const x2 = xFromMinute(dayOffsetMin + b);
+    ctx.fillRect(x1, y, Math.max(1, x2 - x1), SUN_MOON_BAND_H);
+  });
+  ctx.globalAlpha = 1;
+
+  const dayCenterX = xFromMinute(dayOffsetMin + 720);
+  ctx.font = `${SUN_MOON_BAND_H}px sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(icon, dayCenterX, y + SUN_MOON_BAND_H / 2 + 1);
+
+  const dayStartX = xFromMinute(dayOffsetMin);
+  const dayEndX = xFromMinute(dayOffsetMin + 1440);
+  ctx.font = '10px sans-serif';
+  ctx.fillStyle = css('--text');
+  ctx.textBaseline = 'middle';
+  if (riseDate) {
+    const rx = xFromMinute(dayOffsetMin + minuteOfLocalDay(riseDate));
+    ctx.textAlign = 'left';
+    ctx.fillText(formatClock(riseDate), Math.min(rx + 3, dayEndX - 28), y + SUN_MOON_BAND_H / 2 + 1);
+  }
+  if (setDate) {
+    const sx = xFromMinute(dayOffsetMin + minuteOfLocalDay(setDate));
+    ctx.textAlign = 'right';
+    ctx.fillText(formatClock(setDate), Math.max(sx - 3, dayStartX + 28), y + SUN_MOON_BAND_H / 2 + 1);
+  }
+  ctx.restore();
+}
+
+function drawSunMoonBands(xFromMinute) {
+  for (let day = 0; day < dayCount; day++) {
+    const dateStr = addDays(dateInput.value, day);
+    const dayOffsetMin = day * 24 * 60;
+    const sunTimes = getLocalSunTimes(dateStr);
+    const moonTimes = getLocalMoonTimes(dateStr);
+
+    drawSunMoonBand(
+      xFromMinute, dayOffsetMin, SUN_MOON_MOON_Y, '#39c5cf', '🌙',
+      moonTimes.rise, moonTimes.set, moonTimes.alwaysUp
+    );
+    drawSunMoonBand(
+      xFromMinute, dayOffsetMin, SUN_MOON_SUN_Y, '#f59e0b', '☀️',
+      sunTimes.sunrise, sunTimes.sunset, sunTimes.alwaysUp
+    );
+  }
+}
+
 function drawChart() {
   const W = chart.width;
   const H = chart.height;
   ctx.clearRect(0, 0, W, H);
   const hasRiver = currentRiverSeries.length >= 2;
-  const m = {left: 64, right: 20, top: 56, bottom: 76};
+  const m = {left: 64, right: 20, top: 50, bottom: 76};
   const plotW = W - m.left - m.right;
   const plotH = H - m.top - m.bottom;
 
@@ -605,7 +737,14 @@ function drawChart() {
 
   plot = {m, plotW, plotH, yMin, yMax, xFromMinute, yFromHeight, yFromRiverLevel, totalMinutes};
 
-  const gridColor = css('--grid');
+  // Navy plot background, filled first so grid lines/waveforms/labels draw on top.
+  ctx.fillStyle = '#00053a';
+  ctx.fillRect(m.left, m.top, plotW, plotH);
+
+  // The plot background is now always navy, so grid lines use a fixed light,
+  // semi-transparent tone (instead of the theme's --grid) to stay visible in
+  // both light and dark mode.
+  const gridColor = 'rgba(255,255,255,0.22)';
   const textMuted = css('--muted');
   const textMain = css('--text');
   const lineColor = css('--highlight');
@@ -632,11 +771,13 @@ function drawChart() {
     ctx.fillText(formatMeters(val), m.left - 8, y);
   });
 
+  // Placed in the top-right corner (not directly above the plot) so it does
+  // not collide with the sun/moon bands now occupying that space.
   ctx.fillStyle = textMuted;
-  ctx.font = '16px sans-serif';
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'bottom';
-  ctx.fillText('(m)', m.left, m.top - 4);
+  ctx.font = '13px sans-serif';
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'top';
+  ctx.fillText('(m)', W - m.right, 2);
 
   const xStep = dayCount === 1 ? 3 : 6;
   const maxHour = dayCount * 24;
@@ -658,16 +799,20 @@ function drawChart() {
 
   if (dayCount === 1) {
     ctx.fillStyle = textMain;
-    ctx.font = 'bold 26px sans-serif';
+    ctx.font = 'bold 18px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(jpDate(dateInput.value), m.left + plotW / 2, 16);
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillText(jpDate(dateInput.value), m.left + plotW / 2, 14);
   } else {
     ctx.fillStyle = textMain;
-    ctx.font = 'bold 26px sans-serif';
+    ctx.font = 'bold 18px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(jpDate(dateInput.value), xFromMinute(12 * 60), 16);
-    ctx.fillText(jpDate(addDays(dateInput.value, 1)), xFromMinute(36 * 60), 16);
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillText(jpDate(dateInput.value), xFromMinute(12 * 60), 14);
+    ctx.fillText(jpDate(addDays(dateInput.value, 1)), xFromMinute(36 * 60), 14);
   }
+
+  drawSunMoonBands(xFromMinute);
 
   ctx.strokeStyle = lineColor;
   ctx.lineWidth = 4;
