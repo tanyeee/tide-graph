@@ -82,7 +82,7 @@
   }
   select { min-width:150px; height:44px; }
   .btns { display:flex; gap:8px; flex-wrap:wrap; }
-  .range-row { display:flex; align-items:end; gap:12px; }
+  .range-row { display:flex; align-items:end; gap:12px; margin-top:16px; margin-bottom:18px; }
   .refresh-wrap { margin-left:auto; }
   .refresh-btn { min-width:64px; height:44px; border-radius:14px; font-size:22px; font-weight:700; padding:0 14px; }
   .date-nav-field { min-width:min(100%, 520px); }
@@ -98,19 +98,18 @@
   button.active { background:var(--accent); color:#fff; border-color:var(--accent); }
   button:disabled { opacity:.45; cursor:not-allowed; }
   .meta {
-    display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:12px; margin-bottom:14px;
+    display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin-bottom:14px;
   }
   .pill {
     background:var(--pill); border:1px solid var(--border); border-radius:14px; padding:12px 14px;
   }
   .pill .k { color:var(--muted); font-size:12px; margin-bottom:4px; }
   .pill .v { font-size:18px; font-weight:700; }
-  #selectedHeight, #selectedRiverLevel {
+  #selectedHeight {
     color:var(--highlight);
     font-size:24px;
     font-weight:800;
   }
-  #selectedRiverLevel { color:var(--river); }
   .swatch { display:inline-block; width:1.4em; height:.22em; margin:0 .35em .18em 0; vertical-align:middle; border-radius:999px; }
   .swatch.tide { background:var(--highlight); }
   .swatch.river { background:var(--river); }
@@ -148,6 +147,7 @@
   @media (max-width: 780px) {
     body { padding:12px; }
     .card { padding:14px; border-radius:14px; }
+    canvas { width:calc(100% + 28px); margin-left:-14px; margin-right:-14px; border-radius:0; }
     .meta { grid-template-columns:repeat(2,minmax(0,1fr)); }
     .range-row { width:100%; justify-content:space-between; }
     .hl { grid-template-columns:1fr; }
@@ -169,7 +169,7 @@
     .meta { gap:8px; }
     .pill { min-width:0; padding:10px; }
     .pill .v { font-size:16px; white-space:nowrap; }
-    #selectedHeight, #selectedRiverLevel { font-size:20px; }
+    #selectedHeight { font-size:20px; }
     .seekbar { grid-template-columns:52px 52px minmax(0,1fr) 52px 52px; gap:5px; padding:0; }
     .seekbar button { width:52px; height:56px; font-size:28px; }
     .seekbar .double { font-size:24px; }
@@ -192,21 +192,39 @@
           <button id="btnNext7" type="button" aria-label="7日後">&gt;&gt;</button>
         </div>
       </div>
-      <div class="range-row">
-        <div class="field">
-          <label>表示範囲</label>
-          <div class="btns">
-            <button id="btn1" class="active" type="button">1日表示</button>
-            <button id="btn2" type="button">2日表示</button>
-          </div>
-        </div>
-        <div class="field refresh-wrap">
-          <label>更新</label>
-          <button id="btnReload" class="refresh-btn" type="button" aria-label="再読み込み">↻</button>
+    </div>
+
+    <canvas id="chart" width="1040" height="620" aria-label="天文潮位と河川水位の比較グラフ"></canvas>
+    <div class="seekbar">
+      <button id="btnPrev60" class="double" type="button" aria-label="1時間前">≪</button>
+      <button id="btnPrev10" type="button" aria-label="10分前">←</button>
+      <div id="tideName" class="tide-name" aria-label="潮名（目安）" title="月齢に基づく目安">-</div>
+      <button id="btnNext10" type="button" aria-label="10分後">→</button>
+      <button id="btnNext60" class="double" type="button" aria-label="1時間後">≫</button>
+    </div>
+
+    <div class="range-row">
+      <div class="field">
+        <label>表示範囲</label>
+        <div class="btns">
+          <button id="btn1" class="active" type="button">1日表示</button>
+          <button id="btn2" type="button">2日表示</button>
         </div>
       </div>
+      <div class="field refresh-wrap">
+        <label>更新</label>
+        <button id="btnReload" class="refresh-btn" type="button" aria-label="再読み込み">↻</button>
+      </div>
+    </div>
+
+    <div class="meta">
+      <div class="pill"><div class="k">選択時刻</div><div class="v" id="selectedTime">-</div></div>
+      <div class="pill"><div class="k">潮位</div><div class="v" id="selectedHeight">-</div></div>
+    </div>
+
+    <div class="controls">
       <div class="field">
-        <label for="riverStation">河川水位（縦方向を自動フィット）</label>
+        <label for="riverStation">水位観測地点</label>
         <select id="riverStation">
           <option value="">表示しない</option>
           <option value="kuji-ohashi" selected>久慈大橋</option>
@@ -215,22 +233,6 @@
       </div>
     </div>
 
-    <div class="meta">
-      <div class="pill"><div class="k">選択時刻</div><div class="v" id="selectedTime">-</div></div>
-      <div class="pill"><div class="k">潮位</div><div class="v" id="selectedHeight">-</div></div>
-      <div class="pill"><div class="k">河川水位</div><div class="v" id="selectedRiverLevel">-</div></div>
-      <div class="pill"><div class="k">表示範囲</div><div class="v" id="rangeLabel">1日</div></div>
-      <div class="pill"><div class="k">表示日</div><div class="v" id="displayDate">-</div></div>
-    </div>
-
-    <canvas id="chart" width="1040" height="520" aria-label="天文潮位と河川水位の比較グラフ"></canvas>
-    <div class="seekbar">
-      <button id="btnPrev60" class="double" type="button" aria-label="1時間前">≪</button>
-      <button id="btnPrev10" type="button" aria-label="10分前">←</button>
-      <div id="tideName" class="tide-name" aria-label="潮名（目安）" title="月齢に基づく目安">-</div>
-      <button id="btnNext10" type="button" aria-label="10分後">→</button>
-      <button id="btnNext60" class="double" type="button" aria-label="1時間後">≫</button>
-    </div>
     <div class="hl">
       <div class="pill">
         <div class="section-title">選択日の満潮</div>
@@ -289,9 +291,6 @@ const riverStationSelect = document.getElementById('riverStation');
 const tideNameEl = document.getElementById('tideName');
 const selectedTimeEl = document.getElementById('selectedTime');
 const selectedHeightEl = document.getElementById('selectedHeight');
-const selectedRiverLevelEl = document.getElementById('selectedRiverLevel');
-const rangeLabelEl = document.getElementById('rangeLabel');
-const displayDateEl = document.getElementById('displayDate');
 const highList = document.getElementById('highList');
 const lowList = document.getElementById('lowList');
 const dataStatusEl = document.getElementById('dataStatus');
@@ -763,10 +762,6 @@ function drawSelection(point) {
 
   selectedTimeEl.textContent = point.label.replace(/-/g, '/');
   selectedHeightEl.textContent = `${point.height.toFixed(1)} cm`;
-  selectedRiverLevelEl.textContent = riverPoint ? `${riverPoint.level.toFixed(2)} m` : '—';
-  selectedRiverLevelEl.title = riverPoint && RIVER_STATIONS[riverStationSelect.value]
-    ? RIVER_STATIONS[riverStationSelect.value].name
-    : '';
 }
 
 function refresh(resetSelection = true) {
@@ -797,8 +792,6 @@ function refresh(resetSelection = true) {
   }
   if (resetSelection) currentSelectedIndex = getInitialSelectedIndex();
   currentSelectedIndex = Math.max(0, Math.min(currentSeries.length - 1, currentSelectedIndex));
-  rangeLabelEl.textContent = dayCount + '日';
-  displayDateEl.textContent = jpDate(dateStr);
   updateTideLists(dateStr);
   drawChart();
   drawSelection(currentSeries[currentSelectedIndex]);
