@@ -23,6 +23,8 @@
     --canvas-bg:#ffffff;
     --pill:#f9fafb;
     --highlight:#facc15;
+    --river:#0284c7;
+    --now:#db2777;
     --button-bg:#ffffff;
     --button-text:#111827;
     --shadow:0 6px 20px rgba(0,0,0,.04);
@@ -41,6 +43,8 @@
       --canvas-bg:#0f172a;
       --pill:#0f172a;
       --highlight:#fde047;
+      --river:#38bdf8;
+      --now:#f472b6;
       --button-bg:#0f172a;
       --button-text:#e5edf7;
       --shadow:none;
@@ -62,19 +66,20 @@
   .sub { margin-top:18px; }
   .legend { font-size:14px; margin-top:16px; }
   .note { margin-top:12px; font-size:14px; }
-  .data-status[data-state="error"] { color:#dc2626; font-weight:700; }
-  .data-status[data-state="warning"] { color:#d97706; font-weight:700; }
+  .data-status[data-state="error"], .river-status[data-state="error"] { color:#dc2626; font-weight:700; }
+  .data-status[data-state="warning"], .river-status[data-state="warning"] { color:#d97706; font-weight:700; }
   .controls {
     display:flex; flex-wrap:wrap; gap:12px; align-items:end; margin-bottom:18px;
   }
   .field {
-    display:flex; flex-direction:column; gap:6px;
+    display:flex; flex-direction:column; gap:6px; min-width:0;
   }
   label { font-size:14px; color:var(--muted); }
-  input[type="date"] {
+  input[type="date"], select {
     font-size:16px; padding:10px 12px; border:1px solid var(--border); border-radius:10px;
     background:var(--button-bg); color:var(--button-text);
   }
+  select { min-width:150px; height:44px; }
   .btns { display:flex; gap:8px; flex-wrap:wrap; }
   .range-row { display:flex; align-items:end; gap:12px; }
   .refresh-wrap { margin-left:auto; }
@@ -92,18 +97,22 @@
   button.active { background:var(--accent); color:#fff; border-color:var(--accent); }
   button:disabled { opacity:.45; cursor:not-allowed; }
   .meta {
-    display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin-bottom:14px;
+    display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:12px; margin-bottom:14px;
   }
   .pill {
     background:var(--pill); border:1px solid var(--border); border-radius:14px; padding:12px 14px;
   }
   .pill .k { color:var(--muted); font-size:12px; margin-bottom:4px; }
   .pill .v { font-size:18px; font-weight:700; }
-  #selectedHeight {
+  #selectedHeight, #selectedRiverLevel {
     color:var(--highlight);
     font-size:24px;
     font-weight:800;
   }
+  #selectedRiverLevel { color:var(--river); }
+  .swatch { display:inline-block; width:1.4em; height:.22em; margin:0 .35em .18em 0; vertical-align:middle; border-radius:999px; }
+  .swatch.tide { background:var(--highlight); }
+  .swatch.river { background:var(--river); }
   canvas {
     width:100%; height:auto; display:block; border:1px solid var(--border); border-radius:16px; background:var(--canvas-bg);
     touch-action:manipulation;
@@ -147,8 +156,23 @@
     .date-nav input[type="date"] { width:180px; max-width:180px; }
   }
   @media (max-width: 560px) {
-    .date-nav { grid-template-columns:48px 48px 160px 48px 48px; gap:6px; }
-    .date-nav input[type="date"] { width:160px; max-width:160px; }
+    h1 { font-size:26px; white-space:nowrap; }
+    .date-nav { grid-template-columns:44px 44px minmax(0,1fr) 44px 44px; gap:4px; width:100%; }
+    .date-nav button { min-width:0; width:44px; padding:9px 4px; }
+    .date-nav input[type="date"] { width:100%; max-width:none; padding:9px 8px; font-size:14px; }
+    .range-row { gap:8px; }
+    .range-row .btns { gap:6px; }
+    .range-row button { padding:9px 11px; white-space:nowrap; }
+    .refresh-btn { min-width:52px; width:52px; }
+    select { width:100%; max-width:100%; }
+    .meta { gap:8px; }
+    .pill { min-width:0; padding:10px; }
+    .pill .v { font-size:16px; white-space:nowrap; }
+    #selectedHeight, #selectedRiverLevel { font-size:20px; }
+    .seekbar { grid-template-columns:52px 52px minmax(0,1fr) 52px 52px; gap:5px; padding:0; }
+    .seekbar button { width:52px; height:56px; font-size:28px; }
+    .seekbar .double { font-size:24px; }
+    .tide-name { font-size:24px; }
   }
 </style>
 </head>
@@ -180,16 +204,25 @@
           <button id="btnReload" class="refresh-btn" type="button" aria-label="再読み込み">↻</button>
         </div>
       </div>
+      <div class="field">
+        <label for="riverStation">河川水位（縦方向を自動フィット）</label>
+        <select id="riverStation">
+          <option value="">表示しない</option>
+          <option value="kuji-ohashi" selected>久慈大橋</option>
+          <option value="sakakibashi">榊橋</option>
+        </select>
+      </div>
     </div>
 
     <div class="meta">
       <div class="pill"><div class="k">選択時刻</div><div class="v" id="selectedTime">-</div></div>
       <div class="pill"><div class="k">潮位</div><div class="v" id="selectedHeight">-</div></div>
+      <div class="pill"><div class="k">河川水位</div><div class="v" id="selectedRiverLevel">-</div></div>
       <div class="pill"><div class="k">表示範囲</div><div class="v" id="rangeLabel">1日</div></div>
       <div class="pill"><div class="k">表示日</div><div class="v" id="displayDate">-</div></div>
     </div>
 
-    <canvas id="chart" width="1040" height="520" aria-label="潮位グラフ"></canvas>
+    <canvas id="chart" width="1040" height="520" aria-label="天文潮位と河川水位の比較グラフ"></canvas>
     <div class="seekbar">
       <button id="btnPrev60" class="double" type="button" aria-label="1時間前">≪</button>
       <button id="btnPrev10" type="button" aria-label="10分前">←</button>
@@ -211,10 +244,11 @@
     <div id="dataStatus" class="note data-status" role="status" aria-live="polite">
       潮位データを読み込んでいます…
     </div>
-    <div class="sub">日付を選ぶと、1日または2日分の潮位変動を表示できます。グラフをクリックまたはタップすると、その時刻の潮位を表示します。</div>
+    <div id="riverStatus" class="note river-status" role="status" aria-live="polite"></div>
+    <div class="sub">日付を選ぶと、1日または2日分の潮位変動を表示できます。河川水位は縦方向だけを自動調整し、山や谷が現れる時刻のずれを比較しやすくしています。グラフをクリックまたはタップすると、その時刻の値を表示します。</div>
     <div class="legend">
-      縦軸は潮位（cm）、横軸は時刻です。10分刻みの値は、気象庁の毎時潮位をもとに時間内を直線補間しています。潮名は月齢に基づく目安です。天文潮位の予測値であり、気象などの影響を受ける実測潮位とは異なります。<br>
-      出典：<a href="https://www.data.jma.go.jp/kaiyou/db/tide/suisan/suisan.php?stn=D1" target="_blank" rel="noopener noreferrer">気象庁「潮位表 日立」</a>のデータを加工して作成
+      <span class="swatch tide"></span>左軸：天文潮位（cm）　<span class="swatch river"></span>右軸：河川水位（m）　横軸：時刻（JST）。右軸は表示中の両波形の5〜95パーセンタイルが縦方向に合うよう自動調整します。時刻は移動していません。両軸は基準面が異なるため、絶対的な高さの比較には使用できません。<br>
+      潮位の10分値は気象庁の毎時潮位から直線補間した天文潮位で、潮名は月齢に基づく目安です。出典：<a href="https://www.data.jma.go.jp/kaiyou/db/tide/suisan/suisan.php?stn=D1" target="_blank" rel="noopener noreferrer">気象庁「潮位表 日立」</a>、<a href="https://tanyeee.github.io/kuji-waterlevel/" target="_blank" rel="noopener noreferrer">国土交通省データを利用した久慈川水位ビューア</a>
     </div>
   </div>
 </div>
@@ -226,6 +260,13 @@ import {
   parseJmaTideText,
   validateTideRecords
 } from './js/tide-parser.js';
+import {
+  RIVER_STATIONS,
+  axisTicks,
+  calculateRiverAxis,
+  normalizeRiverPayload,
+  riverSeriesForWindow
+} from './js/river-water-level.js';
 
 let tideData = [];
 let dataMap = {};
@@ -243,14 +284,17 @@ const btnPrev10 = document.getElementById('btnPrev10');
 const btnNext10 = document.getElementById('btnNext10');
 const btnNext60 = document.getElementById('btnNext60');
 const btnReload = document.getElementById('btnReload');
+const riverStationSelect = document.getElementById('riverStation');
 const tideNameEl = document.getElementById('tideName');
 const selectedTimeEl = document.getElementById('selectedTime');
 const selectedHeightEl = document.getElementById('selectedHeight');
+const selectedRiverLevelEl = document.getElementById('selectedRiverLevel');
 const rangeLabelEl = document.getElementById('rangeLabel');
 const displayDateEl = document.getElementById('displayDate');
 const highList = document.getElementById('highList');
 const lowList = document.getElementById('lowList');
 const dataStatusEl = document.getElementById('dataStatus');
+const riverStatusEl = document.getElementById('riverStatus');
 
 let dayCount = 1;
 let currentSeries = [];
@@ -258,6 +302,11 @@ let currentMin = 0;
 let currentMax = 0;
 let plot = null;
 let currentSelectedIndex = 0;
+let riverRecords = [];
+let riverMeta = {};
+let currentRiverSeries = [];
+let currentRiverAxis = null;
+let riverRequestId = 0;
 const yearCache = new Map();
 
 function setDataStatus(message, state = 'ready') {
@@ -265,10 +314,45 @@ function setDataStatus(message, state = 'ready') {
   dataStatusEl.dataset.state = state;
 }
 
+function setRiverStatus(message, state = 'ready') {
+  riverStatusEl.textContent = message;
+  riverStatusEl.dataset.state = state;
+}
+
 async function fetchJson(url) {
   const response = await fetch(url, { cache: 'no-cache' });
   if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
   return response.json();
+}
+
+async function loadRiverStation(stationId) {
+  const requestId = ++riverRequestId;
+  riverRecords = [];
+  riverMeta = {};
+  if (currentSeries.length) refresh(false);
+  if (!stationId) {
+    setRiverStatus('河川水位は非表示です。');
+    return;
+  }
+
+  const station = RIVER_STATIONS[stationId];
+  if (!station) return;
+  setRiverStatus(`${station.name}の10分水位を読み込んでいます…`);
+  try {
+    const payload = normalizeRiverPayload(await fetchJson(station.url));
+    if (requestId !== riverRequestId) return;
+    riverRecords = payload.records;
+    riverMeta = payload.meta;
+    const start = riverMeta.dataset_start?.replace('T', ' ') || riverRecords[0]?.timestamp.replace('T', ' ');
+    const end = riverMeta.dataset_end?.replace('T', ' ') || riverRecords.at(-1)?.timestamp.replace('T', ' ');
+    const windowHours = riverMeta.window_hours || 24;
+    setRiverStatus(`${station.name}：${start || '—'}〜${end || '—'}（10分観測、保持設定${windowHours}時間）`);
+  } catch (error) {
+    if (requestId !== riverRequestId) return;
+    console.error(error);
+    setRiverStatus(`${station.name}の水位データを読み込めませんでした。潮位のみ表示します。`, 'error');
+  }
+  if (currentSeries.length) refresh(false);
 }
 
 async function loadTideYear(year) {
@@ -338,6 +422,7 @@ async function initializeData() {
     setDataStatus(`本日のデータは収録範囲外です。最も近い日付を表示しています。${rangeMessage}`, 'warning');
   }
   refresh();
+  await loadRiverStation(riverStationSelect.value);
 }
 
 function css(name) {
@@ -431,9 +516,12 @@ function updateTideLists(dateStr) {
   }
 }
 
-function getYAxisMax() {
+function getTideYAxisRange() {
+  const minHeight = Math.min(...currentSeries.map(d => d.height));
   const maxHeight = Math.max(...currentSeries.map(d => d.height));
-  return maxHeight <= 120 ? 120 : 160;
+  const min = minHeight < 0 ? Math.floor(minHeight / 20) * 20 : 0;
+  const max = Math.max(120, Math.ceil(maxHeight / 40) * 40);
+  return { min, max };
 }
 
 
@@ -459,7 +547,7 @@ function getNowMarkerInfo() {
   if (today < start || today > end) return null;
   const offsetDays = Math.round((new Date(today + 'T00:00:00') - new Date(start + 'T00:00:00')) / 86400000);
   const minute = offsetDays * 24 * 60 + now.getHours() * 60 + now.getMinutes();
-  const total = currentSeries[currentSeries.length - 1].minute;
+  const total = dayCount * 24 * 60;
   if (minute < 0 || minute > total) return null;
   return { minute, label: `${pad(now.getHours())}:${pad(now.getMinutes())}` };
 }
@@ -468,38 +556,59 @@ function drawChart() {
   const W = chart.width;
   const H = chart.height;
   ctx.clearRect(0, 0, W, H);
-  const m = {left: 96, right: 28, top: 56, bottom: 76};
+  const hasRiver = currentRiverSeries.length >= 2;
+  const m = {left: 96, right: hasRiver ? 108 : 28, top: 56, bottom: 76};
   const plotW = W - m.left - m.right;
   const plotH = H - m.top - m.bottom;
 
   currentMin = Math.min(...currentSeries.map(d => d.height));
   currentMax = Math.max(...currentSeries.map(d => d.height));
 
-  const yMin = 0;
-  const yMax = getYAxisMax();
+  const tideAxis = getTideYAxisRange();
+  const yMin = tideAxis.min;
+  const yMax = tideAxis.max;
+  const totalMinutes = dayCount * 24 * 60;
 
   function xFromMinute(minute) {
-    const total = currentSeries[currentSeries.length - 1].minute;
-    return m.left + (minute / total) * plotW;
+    return m.left + (minute / totalMinutes) * plotW;
   }
 
   function yFromHeight(height) {
     return m.top + (yMax - height) / (yMax - yMin) * plotH;
   }
 
-  plot = {m, plotW, plotH, yMin, yMax, xFromMinute, yFromHeight};
+  const tideByMinute = new Map(currentSeries.map(point => [point.minute, point.height]));
+  const pairedTides = currentRiverSeries
+    .map(point => tideByMinute.get(point.minute))
+    .filter(Number.isFinite);
+  const pairedLevels = currentRiverSeries
+    .filter(point => Number.isFinite(tideByMinute.get(point.minute)))
+    .map(point => point.level);
+  currentRiverAxis = hasRiver
+    ? calculateRiverAxis(pairedTides, pairedLevels, { min: yMin, max: yMax })
+    : null;
+
+  function yFromRiverLevel(level) {
+    if (!currentRiverAxis) return null;
+    return m.top + (currentRiverAxis.max - level) /
+      (currentRiverAxis.max - currentRiverAxis.min) * plotH;
+  }
+
+  plot = {m, plotW, plotH, yMin, yMax, xFromMinute, yFromHeight, yFromRiverLevel, totalMinutes};
 
   const gridColor = css('--grid');
   const textMuted = css('--muted');
   const textMain = css('--text');
   const lineColor = css('--highlight');
+  const riverColor = css('--river');
   const selectLine = css('--muted');
   const selectPoint = css('--highlight');
 
   ctx.strokeStyle = gridColor;
   ctx.lineWidth = 1;
 
-  const yTicks = [40, 80, 120, 160].filter(v => v <= yMax);
+  const yTicks = [];
+  for (let value = Math.ceil(yMin / 40) * 40; value <= yMax; value += 40) yTicks.push(value);
   yTicks.forEach(val => {
     const y = yFromHeight(val);
     ctx.beginPath();
@@ -514,10 +623,21 @@ function drawChart() {
     ctx.fillText(`${val}`, m.left - 12, y);
   });
 
+  if (currentRiverAxis) {
+    axisTicks(currentRiverAxis.min, currentRiverAxis.max).forEach(value => {
+      const y = yFromRiverLevel(value);
+      ctx.fillStyle = riverColor;
+      ctx.font = '24px sans-serif';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(value.toFixed(2), W - m.right + 12, y);
+    });
+  }
+
   const xStep = dayCount === 1 ? 3 : 6;
   const maxHour = dayCount * 24;
   for (let h = 0; h <= maxHour; h += xStep) {
-    const minute = Math.min(h * 60, currentSeries[currentSeries.length - 1].minute);
+    const minute = h * 60;
     const x = xFromMinute(minute);
     ctx.beginPath();
     ctx.moveTo(x, m.top);
@@ -556,11 +676,31 @@ function drawChart() {
   });
   ctx.stroke();
 
+  if (currentRiverAxis) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(m.left, m.top, plotW, plotH);
+    ctx.clip();
+    ctx.strokeStyle = riverColor;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    let previous = null;
+    currentRiverSeries.forEach(point => {
+      const x = xFromMinute(point.minute);
+      const y = yFromRiverLevel(point.level);
+      if (!previous || point.minute - previous.minute > 20) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+      previous = point;
+    });
+    ctx.stroke();
+    ctx.restore();
+  }
+
   const nowMarker = getNowMarkerInfo();
   if (nowMarker) {
     const xNow = xFromMinute(nowMarker.minute);
     ctx.save();
-    ctx.strokeStyle = '#38bdf8';
+    ctx.strokeStyle = css('--now');
     ctx.lineWidth = 2;
     ctx.setLineDash([8, 8]);
     ctx.beginPath();
@@ -568,7 +708,7 @@ function drawChart() {
     ctx.lineTo(xNow, H - m.bottom);
     ctx.stroke();
     ctx.setLineDash([]);
-    ctx.fillStyle = '#38bdf8';
+    ctx.fillStyle = css('--now');
     ctx.font = 'bold 20px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'bottom';
@@ -583,9 +723,8 @@ function nearestPointFromClient(clientX) {
   const rect = chart.getBoundingClientRect();
   const x = (clientX - rect.left) * (chart.width / rect.width);
   const xClamped = Math.max(plot.m.left, Math.min(chart.width - plot.m.right, x));
-  const total = currentSeries[currentSeries.length - 1].minute;
   const ratio = (xClamped - plot.m.left) / plot.plotW;
-  const minute = total * ratio;
+  const minute = plot.totalMinutes * ratio;
   let idx = Math.round(minute / 10);
   idx = Math.max(0, Math.min(currentSeries.length - 1, idx));
   return currentSeries[idx];
@@ -610,8 +749,23 @@ function drawSelection(point) {
   ctx.arc(x, y, 6, 0, Math.PI * 2);
   ctx.fill();
 
+  const riverPoint = currentRiverSeries.find(item => item.minute === point.minute);
+  if (riverPoint && currentRiverAxis) {
+    const riverY = plot.yFromRiverLevel(riverPoint.level);
+    if (riverY >= plot.m.top && riverY <= chart.height - plot.m.bottom) {
+      ctx.fillStyle = css('--river');
+      ctx.beginPath();
+      ctx.arc(x, riverY, 6, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
   selectedTimeEl.textContent = point.label.replace(/-/g, '/');
   selectedHeightEl.textContent = `${point.height.toFixed(1)} cm`;
+  selectedRiverLevelEl.textContent = riverPoint ? `${riverPoint.level.toFixed(2)} m` : '—';
+  selectedRiverLevelEl.title = riverPoint && RIVER_STATIONS[riverStationSelect.value]
+    ? RIVER_STATIONS[riverStationSelect.value].name
+    : '';
 }
 
 function refresh(resetSelection = true) {
@@ -629,6 +783,17 @@ function refresh(resetSelection = true) {
   }
 
   currentSeries = buildSeries(dateStr, dayCount);
+  currentRiverSeries = riverStationSelect.value
+    ? riverSeriesForWindow(riverRecords, dateStr, dayCount)
+    : [];
+  if (riverStationSelect.value && riverRecords.length && !currentRiverSeries.length) {
+    setRiverStatus(`${RIVER_STATIONS[riverStationSelect.value].name}：選択範囲内に10分水位データがありません。`, 'warning');
+  } else if (riverStationSelect.value && currentRiverSeries.length) {
+    const station = RIVER_STATIONS[riverStationSelect.value];
+    const start = riverMeta.dataset_start?.replace('T', ' ') || riverRecords[0]?.timestamp.replace('T', ' ');
+    const end = riverMeta.dataset_end?.replace('T', ' ') || riverRecords.at(-1)?.timestamp.replace('T', ' ');
+    setRiverStatus(`${station.name}：${start}〜${end}（10分観測、${currentRiverSeries.length}点を表示）`);
+  }
   if (resetSelection) currentSelectedIndex = getInitialSelectedIndex();
   currentSelectedIndex = Math.max(0, Math.min(currentSeries.length - 1, currentSelectedIndex));
   rangeLabelEl.textContent = dayCount + '日';
@@ -703,6 +868,7 @@ btnPrev10.addEventListener('click', () => moveSelection(-1));
 btnNext10.addEventListener('click', () => moveSelection(1));
 btnNext60.addEventListener('click', () => moveSelection(6));
 btnReload.addEventListener('click', () => location.reload());
+riverStationSelect.addEventListener('change', () => loadRiverStation(riverStationSelect.value));
 
 dateInput.addEventListener('change', refresh);
 
