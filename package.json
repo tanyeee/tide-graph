@@ -1,0 +1,9 @@
+{
+  "name": "tide-graph",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "update-data": "node scripts/update-tide-data.mjs"
+  }
+}
