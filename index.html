@@ -114,6 +114,10 @@
   .swatch { display:inline-block; width:1.4em; height:.22em; margin:0 .35em .18em 0; vertical-align:middle; border-radius:999px; }
   .swatch.tide { background:var(--highlight); }
   .swatch.river { background:var(--river); }
+  .chart-date-title {
+    text-align:center; font-weight:800; font-size:clamp(18px,2.4vw,22px);
+    color:var(--text); margin-bottom:6px;
+  }
   canvas {
     width:100%; height:auto; display:block; border:1px solid var(--border); border-radius:16px; background:var(--canvas-bg);
     touch-action:manipulation;
@@ -195,7 +199,8 @@
       </div>
     </div>
 
-    <canvas id="chart" width="1040" height="620" aria-label="天文潮位と河川水位の比較グラフ"></canvas>
+    <div id="chartDateTitle" class="chart-date-title"></div>
+    <canvas id="chart" width="1040" height="632" aria-label="天文潮位と河川水位の比較グラフ"></canvas>
     <div class="seekbar">
       <button id="btnPrev60" class="double" type="button" aria-label="1時間前">≪</button>
       <button id="btnPrev10" type="button" aria-label="10分前">←</button>
@@ -205,7 +210,7 @@
     </div>
 
     <div class="legend chart-legend">
-      <span class="swatch tide"></span>左軸：天文潮位（m）　<span class="swatch river"></span>河川水位（縦スケール自動調整）
+      <span class="swatch tide"></span>左軸：天文潮位（m）　<span class="swatch river"></span>河川水位
     </div>
 
     <div class="range-row">
@@ -284,6 +289,7 @@ let tideData = [];
 let dataMap = {};
 const chart = document.getElementById('chart');
 const ctx = chart.getContext('2d');
+const chartDateTitleEl = document.getElementById('chartDateTitle');
 const dateInput = document.getElementById('dateInput');
 const btn1 = document.getElementById('btn1');
 const btn2 = document.getElementById('btn2');
@@ -452,6 +458,16 @@ function addDays(dateStr, add) {
   const d = new Date(dateStr + 'T00:00:00');
   d.setDate(d.getDate() + add);
   return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+}
+
+// Renders the date title in the DOM element just above the canvas (the
+// canvas itself no longer draws the title, freeing that vertical space for
+// the enlarged sun/moon bands).
+function updateChartDateTitle() {
+  if (!dateInput.value) return;
+  chartDateTitleEl.textContent = dayCount === 1
+    ? jpDate(dateInput.value)
+    : `${jpDate(dateInput.value)}〜${jpDate(addDays(dateInput.value, 1))}`;
 }
 
 function setDefaultDate() {
@@ -631,9 +647,14 @@ function computeUpIntervals(riseMinute, setMinute, alwaysUp) {
   return [[0, setMinute]];
 }
 
-const SUN_MOON_BAND_H = 13;
-const SUN_MOON_MOON_Y = 20;
+// Sun/moon bands sit in their own dedicated rows above the plot, aligned to
+// the same x-axis (time) coordinates as the plot below them.
+const SUN_MOON_BAND_H = 28;
+const SUN_MOON_ICON_PX = 20;
+const SUN_MOON_LABEL_PX = 18;
+const SUN_MOON_MOON_Y = 0;
 const SUN_MOON_SUN_Y = SUN_MOON_MOON_Y + SUN_MOON_BAND_H + 2;
+const SUN_MOON_BANDS_H = SUN_MOON_SUN_Y + SUN_MOON_BAND_H;
 
 function drawSunMoonBand(xFromMinute, dayOffsetMin, y, color, icon, riseDate, setDate, alwaysUp) {
   const intervals = computeUpIntervals(
@@ -652,25 +673,25 @@ function drawSunMoonBand(xFromMinute, dayOffsetMin, y, color, icon, riseDate, se
   ctx.globalAlpha = 1;
 
   const dayCenterX = xFromMinute(dayOffsetMin + 720);
-  ctx.font = `${SUN_MOON_BAND_H}px sans-serif`;
+  ctx.font = `${SUN_MOON_ICON_PX}px sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(icon, dayCenterX, y + SUN_MOON_BAND_H / 2 + 1);
 
   const dayStartX = xFromMinute(dayOffsetMin);
   const dayEndX = xFromMinute(dayOffsetMin + 1440);
-  ctx.font = '10px sans-serif';
+  ctx.font = `${SUN_MOON_LABEL_PX}px sans-serif`;
   ctx.fillStyle = css('--text');
   ctx.textBaseline = 'middle';
   if (riseDate) {
     const rx = xFromMinute(dayOffsetMin + minuteOfLocalDay(riseDate));
     ctx.textAlign = 'left';
-    ctx.fillText(formatClock(riseDate), Math.min(rx + 3, dayEndX - 28), y + SUN_MOON_BAND_H / 2 + 1);
+    ctx.fillText(formatClock(riseDate), Math.min(rx + 4, dayEndX - 54), y + SUN_MOON_BAND_H / 2 + 1);
   }
   if (setDate) {
     const sx = xFromMinute(dayOffsetMin + minuteOfLocalDay(setDate));
     ctx.textAlign = 'right';
-    ctx.fillText(formatClock(setDate), Math.max(sx - 3, dayStartX + 28), y + SUN_MOON_BAND_H / 2 + 1);
+    ctx.fillText(formatClock(setDate), Math.max(sx - 4, dayStartX + 54), y + SUN_MOON_BAND_H / 2 + 1);
   }
   ctx.restore();
 }
@@ -698,7 +719,9 @@ function drawChart() {
   const H = chart.height;
   ctx.clearRect(0, 0, W, H);
   const hasRiver = currentRiverSeries.length >= 2;
-  const m = {left: 64, right: 20, top: 50, bottom: 76};
+  // Top margin holds only the sun/moon bands now; the date title lives in the
+  // DOM element just above the canvas instead of being drawn on the canvas.
+  const m = {left: 64, right: 20, top: SUN_MOON_BANDS_H + 4, bottom: 76};
   const plotW = W - m.left - m.right;
   const plotH = H - m.top - m.bottom;
 
@@ -746,7 +769,6 @@ function drawChart() {
   // both light and dark mode.
   const gridColor = 'rgba(255,255,255,0.22)';
   const textMuted = css('--muted');
-  const textMain = css('--text');
   const lineColor = css('--highlight');
   const riverColor = css('--river');
   const selectLine = css('--muted');
@@ -771,13 +793,13 @@ function drawChart() {
     ctx.fillText(formatMeters(val), m.left - 8, y);
   });
 
-  // Placed in the top-right corner (not directly above the plot) so it does
-  // not collide with the sun/moon bands now occupying that space.
-  ctx.fillStyle = textMuted;
+  // Drawn just inside the top-left of the navy plot area (light, semi-
+  // transparent text) so it stays clear of the sun/moon bands above it.
+  ctx.fillStyle = 'rgba(255,255,255,0.65)';
   ctx.font = '13px sans-serif';
-  ctx.textAlign = 'right';
+  ctx.textAlign = 'left';
   ctx.textBaseline = 'top';
-  ctx.fillText('(m)', W - m.right, 2);
+  ctx.fillText('(m)', m.left + 6, m.top + 4);
 
   const xStep = dayCount === 1 ? 3 : 6;
   const maxHour = dayCount * 24;
@@ -797,20 +819,7 @@ function drawChart() {
     ctx.fillText(label, x, H - m.bottom + 12);
   }
 
-  if (dayCount === 1) {
-    ctx.fillStyle = textMain;
-    ctx.font = 'bold 18px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'alphabetic';
-    ctx.fillText(jpDate(dateInput.value), m.left + plotW / 2, 14);
-  } else {
-    ctx.fillStyle = textMain;
-    ctx.font = 'bold 18px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'alphabetic';
-    ctx.fillText(jpDate(dateInput.value), xFromMinute(12 * 60), 14);
-    ctx.fillText(jpDate(addDays(dateInput.value, 1)), xFromMinute(36 * 60), 14);
-  }
+  updateChartDateTitle();
 
   try {
     drawSunMoonBands(xFromMinute);
