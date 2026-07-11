@@ -95,10 +95,16 @@
   .river-field select {
     min-width:0; width:100%;
     text-overflow:ellipsis; overflow:hidden; white-space:nowrap;
+    font-size:18px;
+    /* text-align centers the selected value in browsers that honor it on a
+       closed <select> (incl. iOS Safari); text-align-last is the fallback
+       property some engines use instead for the last (only, here) line. */
+    text-align:center; text-align-last:center;
   }
   .refresh-wrap { margin-left:auto; }
   .refresh-btn { min-width:64px; height:44px; border-radius:14px; font-size:22px; font-weight:700; padding:0 14px; }
   .date-nav-field { min-width:min(100%, 520px); }
+  .date-nav-label-main { display:block; font-size:16px; }
   .date-nav { display:grid; grid-template-columns:56px 56px 220px 56px 56px; align-items:center; gap:8px; justify-content:start; }
   /* Nav buttons (date-nav and seekbar) show a small step-size label above the
      arrow glyph, stacked via flex-column, so the arrow's own font-size lives
@@ -141,7 +147,7 @@
     background:var(--pill); border:1px solid var(--border); border-radius:14px; padding:12px 14px;
   }
   .pill .k { color:var(--muted); font-size:12px; margin-bottom:4px; }
-  .pill .v { font-size:18px; font-weight:700; }
+  .pill .v { font-size:18px; font-weight:700; text-align:center; }
   #selectedHeight {
     color:var(--highlight);
     font-size:24px;
@@ -207,7 +213,7 @@
     .range-row button { padding:9px 8px; white-space:nowrap; }
     .refresh-btn { min-width:44px; width:44px; padding:0 8px; }
     .river-field label { font-size:12px; }
-    .river-field select { padding:10px 8px; font-size:14px; }
+    .river-field select { padding:10px 8px; font-size:16px; }
     .meta { gap:8px; }
     .pill { min-width:0; padding:10px; }
     .pill .v { font-size:16px; white-space:nowrap; }
@@ -233,7 +239,7 @@
 
     <div class="controls">
       <div class="field date-nav-field">
-        <label for="dateInput">表示日（日付をクリックまたはタップするとカレンダーから変更できます）</label>
+        <label for="dateInput"><span class="date-nav-label-main">表示日</span>日付をクリックまたはタップするとカレンダーから変更可能</label>
         <div class="date-nav">
           <button id="btnPrev7" type="button" aria-label="1週間前"><span class="nav-step">1週間</span><span class="nav-arrow">&lt;&lt;</span></button>
           <button id="btnPrev1" type="button" aria-label="1日前"><span class="nav-step">1日</span><span class="nav-arrow">&lt;</span></button>
@@ -247,7 +253,7 @@
       </div>
     </div>
 
-    <canvas id="chart" width="1040" height="632" aria-label="天文潮位と河川水位の比較グラフ"></canvas>
+    <canvas id="chart" width="1040" height="661" aria-label="天文潮位と河川水位の比較グラフ"></canvas>
 
     <div class="legend chart-legend">
       <span class="swatch tide"></span>天文潮位（m）　<span class="swatch river"></span>河川水位　<span class="swatch now"></span>現在時刻
@@ -729,11 +735,12 @@ const SELECTION_DOT_RADIUS = 12;
 
 // Sun/moon bands sit in their own dedicated rows above the plot, aligned to
 // the same x-axis (time) coordinates as the plot below them.
-const SUN_MOON_BAND_H = 28;
-const SUN_MOON_ICON_PX = 20;
-const SUN_MOON_LABEL_PX = 18;
+// Scaled 1.5x from the original 28/20/18/2 (band height/icon/label/gap).
+const SUN_MOON_BAND_H = 42;
+const SUN_MOON_ICON_PX = 30;
+const SUN_MOON_LABEL_PX = 27;
 const SUN_MOON_MOON_Y = 0;
-const SUN_MOON_SUN_Y = SUN_MOON_MOON_Y + SUN_MOON_BAND_H + 2;
+const SUN_MOON_SUN_Y = SUN_MOON_MOON_Y + SUN_MOON_BAND_H + 3;
 const SUN_MOON_BANDS_H = SUN_MOON_SUN_Y + SUN_MOON_BAND_H;
 
 function drawSunMoonBand(xFromMinute, dayOffsetMin, y, color, icon, riseDate, setDate, alwaysUp) {
@@ -768,12 +775,12 @@ function drawSunMoonBand(xFromMinute, dayOffsetMin, y, color, icon, riseDate, se
   if (riseDate) {
     const rx = xFromMinute(dayOffsetMin + minuteOfLocalDay(riseDate));
     ctx.textAlign = 'left';
-    ctx.fillText(formatClock(riseDate), Math.min(rx + 4, dayEndX - 54), y + SUN_MOON_BAND_H / 2 + 1);
+    ctx.fillText(formatClock(riseDate), Math.min(rx + 6, dayEndX - 81), y + SUN_MOON_BAND_H / 2 + 1);
   }
   if (setDate) {
     const sx = xFromMinute(dayOffsetMin + minuteOfLocalDay(setDate));
     ctx.textAlign = 'right';
-    ctx.fillText(formatClock(setDate), Math.max(sx - 4, dayStartX + 54), y + SUN_MOON_BAND_H / 2 + 1);
+    ctx.fillText(formatClock(setDate), Math.max(sx - 6, dayStartX + 81), y + SUN_MOON_BAND_H / 2 + 1);
   }
   ctx.restore();
 }
@@ -803,7 +810,9 @@ function drawChart() {
   const hasRiver = currentRiverSeries.length >= 2;
   // Top margin holds only the sun/moon bands now; the date title lives in the
   // DOM element just above the canvas instead of being drawn on the canvas.
-  const m = {left: 64, right: 20, top: SUN_MOON_BANDS_H + 4, bottom: 76};
+  // left widened from 64 to 80 to keep the (now 28px, up from 20px) y-axis
+  // labels like "-0.4" from clipping against the canvas edge.
+  const m = {left: 80, right: 20, top: SUN_MOON_BANDS_H + 4, bottom: 76};
   const plotW = W - m.left - m.right;
   const plotH = H - m.top - m.bottom;
 
@@ -872,7 +881,7 @@ function drawChart() {
     ctx.stroke();
 
     ctx.fillStyle = textMuted;
-    ctx.font = '20px sans-serif';
+    ctx.font = '28px sans-serif';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'middle';
     ctx.fillText(formatMeters(val), m.left - 8, y);
@@ -913,7 +922,7 @@ function drawChart() {
   }
 
   ctx.strokeStyle = lineColor;
-  ctx.lineWidth = 4;
+  ctx.lineWidth = 6;
   ctx.beginPath();
   currentSeries.forEach((p, i) => {
     const x = xFromMinute(p.minute);
@@ -929,7 +938,7 @@ function drawChart() {
     ctx.rect(m.left, m.top, plotW, plotH);
     ctx.clip();
     ctx.strokeStyle = riverColor;
-    ctx.lineWidth = 3;
+    ctx.lineWidth = 4.5;
     ctx.beginPath();
     let previous = null;
     currentRiverSeries.forEach(point => {
@@ -948,7 +957,7 @@ function drawChart() {
     const xNow = xFromMinute(nowMarker.minute);
     ctx.save();
     ctx.strokeStyle = css('--now');
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 3;
     ctx.setLineDash([8, 8]);
     ctx.beginPath();
     ctx.moveTo(xNow, m.top);
