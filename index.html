@@ -208,24 +208,6 @@
   <div class="card">
     <h1>日立 潮位グラフ</h1>
 
-    <canvas id="chart" width="1040" height="632" aria-label="天文潮位と河川水位の比較グラフ"></canvas>
-    <div class="seekbar">
-      <button id="btnPrev60" class="double" type="button" aria-label="1時間前">≪</button>
-      <button id="btnPrev10" type="button" aria-label="10分前">←</button>
-      <div id="tideName" class="tide-name" aria-label="潮名（目安）" title="月齢に基づく目安">-</div>
-      <button id="btnNext10" type="button" aria-label="10分後">→</button>
-      <button id="btnNext60" class="double" type="button" aria-label="1時間後">≫</button>
-    </div>
-
-    <div class="legend chart-legend">
-      <span class="swatch tide"></span>左軸：天文潮位（m）　<span class="swatch river"></span>河川水位　<span class="swatch now"></span>現在時刻
-    </div>
-
-    <div class="meta">
-      <div class="pill"><div class="k">選択時刻</div><div class="v" id="selectedTime">-</div></div>
-      <div class="pill"><div class="k">潮位</div><div class="v" id="selectedHeight">-</div></div>
-    </div>
-
     <div class="controls">
       <div class="field date-nav-field">
         <label for="dateInput">表示日</label>
@@ -240,6 +222,25 @@
           <button id="btnNext7" type="button" aria-label="7日後">&gt;&gt;</button>
         </div>
       </div>
+    </div>
+
+    <canvas id="chart" width="1040" height="632" aria-label="天文潮位と河川水位の比較グラフ"></canvas>
+
+    <div class="legend chart-legend">
+      <span class="swatch tide"></span>左軸：天文潮位（m）　<span class="swatch river"></span>河川水位　<span class="swatch now"></span>現在時刻
+    </div>
+
+    <div class="meta">
+      <div class="pill"><div class="k">選択時刻</div><div class="v" id="selectedTime">-</div></div>
+      <div class="pill"><div class="k">潮位</div><div class="v" id="selectedHeight">-</div></div>
+    </div>
+
+    <div class="seekbar">
+      <button id="btnPrev60" class="double" type="button" aria-label="1時間前">≪</button>
+      <button id="btnPrev10" type="button" aria-label="10分前">←</button>
+      <div id="tideName" class="tide-name" aria-label="潮名（目安）" title="月齢に基づく目安">-</div>
+      <button id="btnNext10" type="button" aria-label="10分後">→</button>
+      <button id="btnNext60" class="double" type="button" aria-label="1時間後">≫</button>
     </div>
 
     <div class="range-row">
