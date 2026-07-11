@@ -22,6 +22,7 @@
     --accent-soft:#dbeafe;
     --border:#e5e7eb;
     --canvas-bg:#ffffff;
+    --chart-bg:#1a5276;
     --pill:#f9fafb;
     --highlight:#facc15;
     --river:#0284c7;
@@ -119,7 +120,7 @@
     color:var(--text); margin-bottom:6px;
   }
   canvas {
-    width:100%; height:auto; display:block; border:1px solid var(--border); border-radius:16px; background:var(--canvas-bg);
+    width:100%; height:auto; display:block; border:1px solid var(--border); border-radius:16px; background:var(--chart-bg);
     touch-action:manipulation;
   }
   .hl {
@@ -332,6 +333,30 @@ function setDataStatus(message, state = 'ready') {
 function setRiverStatus(message, state = 'ready') {
   riverStatusEl.textContent = message;
   riverStatusEl.dataset.state = state;
+}
+
+const RIVER_STATION_STORAGE_KEY = 'riverStationCode';
+
+// Remembers the user's river station choice across visits. If the saved
+// value doesn't match one of the select's current options (e.g. a station
+// was removed), the select's existing default (久慈大橋) is left as-is.
+function restoreRiverStationSelection() {
+  try {
+    const saved = localStorage.getItem(RIVER_STATION_STORAGE_KEY);
+    if (saved === null) return;
+    const hasOption = Array.from(riverStationSelect.options).some(opt => opt.value === saved);
+    if (hasOption) riverStationSelect.value = saved;
+  } catch (error) {
+    console.warn('Failed to read saved river station from localStorage.', error);
+  }
+}
+
+function saveRiverStationSelection(value) {
+  try {
+    localStorage.setItem(RIVER_STATION_STORAGE_KEY, value);
+  } catch (error) {
+    console.warn('Failed to save river station to localStorage.', error);
+  }
 }
 
 async function fetchJson(url) {
@@ -680,8 +705,10 @@ function drawSunMoonBand(xFromMinute, dayOffsetMin, y, color, icon, riseDate, se
 
   const dayStartX = xFromMinute(dayOffsetMin);
   const dayEndX = xFromMinute(dayOffsetMin + 1440);
+  // Fixed white (not the theme's --text, which is dark in light mode) since
+  // the band rows sit on the always-blue --chart-bg background.
   ctx.font = `${SUN_MOON_LABEL_PX}px sans-serif`;
-  ctx.fillStyle = css('--text');
+  ctx.fillStyle = '#ffffff';
   ctx.textBaseline = 'middle';
   if (riseDate) {
     const rx = xFromMinute(dayOffsetMin + minuteOfLocalDay(riseDate));
@@ -760,15 +787,18 @@ function drawChart() {
 
   plot = {m, plotW, plotH, yMin, yMax, xFromMinute, yFromHeight, yFromRiverLevel, totalMinutes};
 
-  // Navy plot background, filled first so grid lines/waveforms/labels draw on top.
-  ctx.fillStyle = '#00053a';
+  // Plot background reads from the --chart-bg CSS variable (single source of
+  // truth shared with the canvas element's own CSS background), filled first
+  // so grid lines/waveforms/labels draw on top and blend into one card.
+  const chartBg = css('--chart-bg');
+  ctx.fillStyle = chartBg;
   ctx.fillRect(m.left, m.top, plotW, plotH);
 
-  // The plot background is now always navy, so grid lines use a fixed light,
-  // semi-transparent tone (instead of the theme's --grid) to stay visible in
-  // both light and dark mode.
-  const gridColor = 'rgba(255,255,255,0.22)';
-  const textMuted = css('--muted');
+  // The plot background is now always the --chart-bg blue, so grid lines and
+  // axis text use fixed light, semi-transparent tones (instead of the
+  // theme's --grid/--muted) to stay legible in both light and dark mode.
+  const gridColor = 'rgba(255,255,255,0.3)';
+  const textMuted = 'rgba(255,255,255,0.85)';
   const lineColor = css('--highlight');
   const riverColor = css('--river');
   const selectLine = css('--muted');
@@ -793,9 +823,9 @@ function drawChart() {
     ctx.fillText(formatMeters(val), m.left - 8, y);
   });
 
-  // Drawn just inside the top-left of the navy plot area (light, semi-
+  // Drawn just inside the top-left of the plot area (light, semi-
   // transparent text) so it stays clear of the sun/moon bands above it.
-  ctx.fillStyle = 'rgba(255,255,255,0.65)';
+  ctx.fillStyle = 'rgba(255,255,255,0.75)';
   ctx.font = '13px sans-serif';
   ctx.textAlign = 'left';
   ctx.textBaseline = 'top';
@@ -1024,7 +1054,10 @@ btnPrev10.addEventListener('click', () => moveSelection(-1));
 btnNext10.addEventListener('click', () => moveSelection(1));
 btnNext60.addEventListener('click', () => moveSelection(6));
 btnReload.addEventListener('click', () => location.reload());
-riverStationSelect.addEventListener('change', () => loadRiverStation(riverStationSelect.value));
+riverStationSelect.addEventListener('change', () => {
+  saveRiverStationSelection(riverStationSelect.value);
+  loadRiverStation(riverStationSelect.value);
+});
 
 dateInput.addEventListener('change', refresh);
 
@@ -1046,6 +1079,7 @@ if (window.matchMedia) {
   else if (mq.addListener) mq.addListener(refresh);
 }
 
+restoreRiverStationSelection();
 initializeData().catch(error => {
   console.error(error);
   dateInput.disabled = true;
