@@ -85,7 +85,17 @@
   select { min-width:150px; height:44px; }
   .btns { display:flex; gap:8px; flex-wrap:wrap; }
   .range-row { display:flex; flex-wrap:wrap; align-items:end; gap:12px; margin-top:16px; margin-bottom:18px; }
-  .river-field { flex:1 1 180px; min-width:160px; }
+  /* flex-basis:0 (not a fixed px value) lets this field shrink down to
+     whatever room is left after the 表示範囲 buttons and 更新 button take
+     their space, instead of forcing its own line. min-width:0 is required
+     too: without it, flex items default to min-width:auto, which floors
+     their size at their content's natural width and defeats shrinking. */
+  .river-field { flex:1 1 0; min-width:0; }
+  .river-field label { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .river-field select {
+    min-width:0; width:100%;
+    text-overflow:ellipsis; overflow:hidden; white-space:nowrap;
+  }
   .refresh-wrap { margin-left:auto; }
   .refresh-btn { min-width:64px; height:44px; border-radius:14px; font-size:22px; font-weight:700; padding:0 14px; }
   .date-nav-field { min-width:min(100%, 520px); }
@@ -174,7 +184,6 @@
     canvas { width:calc(100% + 28px); margin-left:-14px; margin-right:-14px; border-radius:0; }
     .meta { grid-template-columns:repeat(2,minmax(0,1fr)); }
     .range-row { width:100%; justify-content:space-between; }
-    .hl { grid-template-columns:1fr; }
     #selectedHeight { font-size:22px; }
     .date-nav { grid-template-columns:52px 52px 180px 52px 52px; gap:6px; }
     .date-nav button { min-width:52px; font-size:18px; }
@@ -184,12 +193,12 @@
     .date-nav { grid-template-columns:44px 44px minmax(0,1fr) 44px 44px; gap:4px; width:100%; }
     .date-nav button { min-width:0; width:44px; padding:9px 4px; }
     .date-display { font-size:18px; }
-    .range-row { gap:8px; }
-    .range-row .btns { gap:6px; }
-    .range-row button { padding:9px 11px; white-space:nowrap; }
-    .refresh-btn { min-width:52px; width:52px; }
-    .river-field { flex:1 1 100%; }
-    select { width:100%; max-width:100%; }
+    .range-row { gap:6px; }
+    .range-row .btns { gap:4px; }
+    .range-row button { padding:9px 8px; white-space:nowrap; }
+    .refresh-btn { min-width:44px; width:44px; padding:0 8px; }
+    .river-field label { font-size:12px; }
+    .river-field select { padding:10px 8px; font-size:14px; }
     .meta { gap:8px; }
     .pill { min-width:0; padding:10px; }
     .pill .v { font-size:16px; white-space:nowrap; }
@@ -200,6 +209,9 @@
     .tide-name { font-size:24px; }
     .legend.chart-legend { font-size:12px; }
     .legend.chart-legend .swatch { margin-right:.25em; }
+    .hl { gap:8px; }
+    .hl .section-title { font-size:12px; }
+    .hl li { font-size:12px; }
   }
 </style>
 </head>
@@ -210,7 +222,7 @@
 
     <div class="controls">
       <div class="field date-nav-field">
-        <label for="dateInput">表示日</label>
+        <label for="dateInput">表示日（日付をタップでカレンダーで日付を変更可能）</label>
         <div class="date-nav">
           <button id="btnPrev7" type="button" aria-label="7日前">&lt;&lt;</button>
           <button id="btnPrev1" type="button" aria-label="1日前">&lt;</button>
@@ -227,7 +239,7 @@
     <canvas id="chart" width="1040" height="632" aria-label="天文潮位と河川水位の比較グラフ"></canvas>
 
     <div class="legend chart-legend">
-      <span class="swatch tide"></span>左軸：天文潮位（m）　<span class="swatch river"></span>河川水位　<span class="swatch now"></span>現在時刻
+      <span class="swatch tide"></span>天文潮位（m）　<span class="swatch river"></span>河川水位　<span class="swatch now"></span>現在時刻
     </div>
 
     <div class="meta">
@@ -252,7 +264,7 @@
         </div>
       </div>
       <div class="field river-field">
-        <label for="riverStation">水位観測地点</label>
+        <label for="riverStation">河川水位観測地点</label>
         <select id="riverStation">
           <option value="">表示しない</option>
           <optgroup label="久慈川水系">
