@@ -84,7 +84,8 @@
   }
   select { min-width:150px; height:44px; }
   .btns { display:flex; gap:8px; flex-wrap:wrap; }
-  .range-row { display:flex; align-items:end; gap:12px; margin-top:16px; margin-bottom:18px; }
+  .range-row { display:flex; flex-wrap:wrap; align-items:end; gap:12px; margin-top:16px; margin-bottom:18px; }
+  .river-field { flex:1 1 180px; min-width:160px; }
   .refresh-wrap { margin-left:auto; }
   .refresh-btn { min-width:64px; height:44px; border-radius:14px; font-size:22px; font-weight:700; padding:0 14px; }
   .date-nav-field { min-width:min(100%, 520px); }
@@ -92,7 +93,24 @@
   .date-nav button {
     min-width:52px; padding:10px 12px; font-size:20px; font-weight:700; border-radius:14px;
   }
-  .date-nav input[type="date"] { min-width:0; width:220px; max-width:220px; justify-self:start; }
+  /* The real <input type="date"> is kept in the DOM (so the existing change
+     handler, min/max, disabled state, etc. all keep working unchanged) but is
+     stretched transparently over the visible .date-display label. Tapping
+     anywhere on the label taps the real input directly, which is the most
+     reliable way to open the native date picker across browsers, including
+     iOS Safari (no synthetic click()/showPicker() call needed). */
+  .date-display-wrap {
+    position:relative; min-width:0; align-self:stretch;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .date-display {
+    font-size:20px; font-weight:800; color:var(--text); white-space:nowrap;
+    pointer-events:none; text-align:center; width:100%;
+  }
+  .date-nav input[type="date"] {
+    position:absolute; inset:0; width:100%; height:100%; margin:0; padding:0; border:0;
+    opacity:0; cursor:pointer; -webkit-appearance:none; appearance:none;
+  }
   button {
     appearance:none; border:1px solid var(--border); background:var(--button-bg); color:var(--button-text);
     padding:10px 14px; border-radius:999px; cursor:pointer; font-size:15px;
@@ -118,10 +136,6 @@
   .swatch.now {
     background:repeating-linear-gradient(to right, var(--now) 0, var(--now) 4px, transparent 4px, transparent 8px);
     border-radius:0;
-  }
-  .chart-date-title {
-    text-align:center; font-weight:800; font-size:clamp(18px,2.4vw,22px);
-    color:var(--text); margin-bottom:6px;
   }
   canvas {
     width:100%; height:auto; display:block; border:1px solid var(--border); border-radius:16px; background:var(--chart-bg);
@@ -164,17 +178,17 @@
     #selectedHeight { font-size:22px; }
     .date-nav { grid-template-columns:52px 52px 180px 52px 52px; gap:6px; }
     .date-nav button { min-width:52px; font-size:18px; }
-    .date-nav input[type="date"] { width:180px; max-width:180px; }
   }
   @media (max-width: 560px) {
     h1 { font-size:26px; white-space:nowrap; }
     .date-nav { grid-template-columns:44px 44px minmax(0,1fr) 44px 44px; gap:4px; width:100%; }
     .date-nav button { min-width:0; width:44px; padding:9px 4px; }
-    .date-nav input[type="date"] { width:100%; max-width:none; padding:9px 8px; font-size:14px; }
+    .date-display { font-size:18px; }
     .range-row { gap:8px; }
     .range-row .btns { gap:6px; }
     .range-row button { padding:9px 11px; white-space:nowrap; }
     .refresh-btn { min-width:52px; width:52px; }
+    .river-field { flex:1 1 100%; }
     select { width:100%; max-width:100%; }
     .meta { gap:8px; }
     .pill { min-width:0; padding:10px; }
@@ -193,21 +207,34 @@
 <div class="wrap">
   <div class="card">
     <h1>日立 潮位グラフ</h1>
+
     <div class="controls">
       <div class="field date-nav-field">
         <label for="dateInput">表示日</label>
         <div class="date-nav">
           <button id="btnPrev7" type="button" aria-label="7日前">&lt;&lt;</button>
           <button id="btnPrev1" type="button" aria-label="1日前">&lt;</button>
-          <input id="dateInput" type="date" disabled>
+          <div class="date-display-wrap">
+            <div id="dateDisplay" class="date-display" aria-hidden="true">-</div>
+            <input id="dateInput" type="date" disabled>
+          </div>
           <button id="btnNext1" type="button" aria-label="1日後">&gt;</button>
           <button id="btnNext7" type="button" aria-label="7日後">&gt;&gt;</button>
         </div>
       </div>
     </div>
 
-    <div id="chartDateTitle" class="chart-date-title"></div>
     <canvas id="chart" width="1040" height="632" aria-label="天文潮位と河川水位の比較グラフ"></canvas>
+
+    <div class="legend chart-legend">
+      <span class="swatch tide"></span>左軸：天文潮位（m）　<span class="swatch river"></span>河川水位　<span class="swatch now"></span>現在時刻
+    </div>
+
+    <div class="meta">
+      <div class="pill"><div class="k">選択時刻</div><div class="v" id="selectedTime">-</div></div>
+      <div class="pill"><div class="k">潮位</div><div class="v" id="selectedHeight">-</div></div>
+    </div>
+
     <div class="seekbar">
       <button id="btnPrev60" class="double" type="button" aria-label="1時間前">≪</button>
       <button id="btnPrev10" type="button" aria-label="10分前">←</button>
@@ -216,31 +243,15 @@
       <button id="btnNext60" class="double" type="button" aria-label="1時間後">≫</button>
     </div>
 
-    <div class="legend chart-legend">
-      <span class="swatch tide"></span>左軸：天文潮位（m）　<span class="swatch river"></span>河川水位　<span class="swatch now"></span>現在時刻
-    </div>
-
     <div class="range-row">
       <div class="field">
         <label>表示範囲</label>
         <div class="btns">
-          <button id="btn1" class="active" type="button">1日表示</button>
-          <button id="btn2" type="button">2日表示</button>
+          <button id="btn1" class="active" type="button">1日</button>
+          <button id="btn2" type="button">2日</button>
         </div>
       </div>
-      <div class="field refresh-wrap">
-        <label>更新</label>
-        <button id="btnReload" class="refresh-btn" type="button" aria-label="再読み込み">↻</button>
-      </div>
-    </div>
-
-    <div class="meta">
-      <div class="pill"><div class="k">選択時刻</div><div class="v" id="selectedTime">-</div></div>
-      <div class="pill"><div class="k">潮位</div><div class="v" id="selectedHeight">-</div></div>
-    </div>
-
-    <div class="controls">
-      <div class="field">
+      <div class="field river-field">
         <label for="riverStation">水位観測地点</label>
         <select id="riverStation">
           <option value="">表示しない</option>
@@ -255,6 +266,10 @@
             <option value="kunita-ohashi">国田大橋</option>
           </optgroup>
         </select>
+      </div>
+      <div class="field refresh-wrap">
+        <label>更新</label>
+        <button id="btnReload" class="refresh-btn" type="button" aria-label="再読み込み">↻</button>
       </div>
     </div>
 
@@ -304,7 +319,7 @@ let tideData = [];
 let dataMap = {};
 const chart = document.getElementById('chart');
 const ctx = chart.getContext('2d');
-const chartDateTitleEl = document.getElementById('chartDateTitle');
+const dateDisplayEl = document.getElementById('dateDisplay');
 const dateInput = document.getElementById('dateInput');
 const btn1 = document.getElementById('btn1');
 const btn2 = document.getElementById('btn2');
@@ -499,14 +514,12 @@ function addDays(dateStr, add) {
   return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
 }
 
-// Renders the date title in the DOM element just above the canvas (the
-// canvas itself no longer draws the title, freeing that vertical space for
-// the enlarged sun/moon bands).
-function updateChartDateTitle() {
+// Renders the day-with-weekday label shown over the real (transparent)
+// <input type="date"> in the date-nav row. Always shows the selected start
+// date only, even in 2-day view (the second day isn't shown here).
+function updateDateDisplay() {
   if (!dateInput.value) return;
-  chartDateTitleEl.textContent = dayCount === 1
-    ? jpDate(dateInput.value)
-    : `${jpDate(dateInput.value)}〜${jpDate(addDays(dateInput.value, 1))}`;
+  dateDisplayEl.textContent = jpDate(dateInput.value);
 }
 
 function setDefaultDate() {
@@ -863,7 +876,7 @@ function drawChart() {
     ctx.fillText(label, x, H - m.bottom + 12);
   }
 
-  updateChartDateTitle();
+  updateDateDisplay();
 
   try {
     drawSunMoonBands(xFromMinute);
