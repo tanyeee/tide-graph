@@ -100,9 +100,16 @@
   .refresh-btn { min-width:64px; height:44px; border-radius:14px; font-size:22px; font-weight:700; padding:0 14px; }
   .date-nav-field { min-width:min(100%, 520px); }
   .date-nav { display:grid; grid-template-columns:56px 56px 220px 56px 56px; align-items:center; gap:8px; justify-content:start; }
+  /* Nav buttons (date-nav and seekbar) show a small step-size label above the
+     arrow glyph, stacked via flex-column, so the arrow's own font-size lives
+     on .nav-arrow instead of the button element directly. */
   .date-nav button {
-    min-width:52px; padding:10px 12px; font-size:20px; font-weight:700; border-radius:14px;
+    min-width:52px; padding:8px 6px; font-weight:700; border-radius:14px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:1px; line-height:1.1;
   }
+  .date-nav button .nav-arrow { font-size:20px; line-height:1; }
+  .nav-step { font-size:10px; font-weight:600; line-height:1.15; }
   /* The real <input type="date"> is kept in the DOM (so the existing change
      handler, min/max, disabled state, etc. all keep working unchanged) but is
      stretched transparently over the visible .date-display label. Tapping
@@ -162,13 +169,13 @@
     gap:12px; margin-top:12px; padding:0 4px;
   }
   .seekbar button {
-    width:64px; height:64px; border-radius:18px; font-size:34px; font-weight:700;
-    line-height:1; padding:0;
+    width:64px; min-height:64px; border-radius:18px; font-weight:700;
+    line-height:1; padding:6px 0;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
   }
-  .seekbar .double {
-    font-size:28px;
-    font-weight:800;
-  }
+  .seekbar button .nav-arrow { font-size:34px; line-height:1; }
+  .seekbar button.double .nav-arrow { font-size:28px; }
+  .seekbar button.double { font-weight:800; }
   .tide-name {
     text-align:center;
     font-size:32px;
@@ -186,12 +193,14 @@
     .range-row { width:100%; justify-content:space-between; }
     #selectedHeight { font-size:22px; }
     .date-nav { grid-template-columns:52px 52px 180px 52px 52px; gap:6px; }
-    .date-nav button { min-width:52px; font-size:18px; }
+    .date-nav button { min-width:52px; }
+    .date-nav button .nav-arrow { font-size:18px; }
   }
   @media (max-width: 560px) {
     h1 { font-size:26px; white-space:nowrap; }
     .date-nav { grid-template-columns:44px 44px minmax(0,1fr) 44px 44px; gap:4px; width:100%; }
-    .date-nav button { min-width:0; width:44px; padding:9px 4px; }
+    .date-nav button { min-width:0; width:44px; padding:8px 2px; }
+    .date-nav button .nav-step { font-size:9px; }
     .date-display { font-size:18px; }
     .range-row { gap:6px; }
     .range-row .btns { gap:4px; }
@@ -204,8 +213,10 @@
     .pill .v { font-size:16px; white-space:nowrap; }
     #selectedHeight { font-size:20px; }
     .seekbar { grid-template-columns:52px 52px minmax(0,1fr) 52px 52px; gap:5px; padding:0; }
-    .seekbar button { width:52px; height:56px; font-size:28px; }
-    .seekbar .double { font-size:24px; }
+    .seekbar button { width:52px; min-height:56px; padding:4px 0; }
+    .seekbar button .nav-arrow { font-size:28px; }
+    .seekbar button.double .nav-arrow { font-size:24px; }
+    .seekbar button .nav-step { font-size:9px; }
     .tide-name { font-size:24px; }
     .legend.chart-legend { font-size:12px; }
     .legend.chart-legend .swatch { margin-right:.25em; }
@@ -222,16 +233,16 @@
 
     <div class="controls">
       <div class="field date-nav-field">
-        <label for="dateInput">表示日（日付をタップでカレンダーで日付を変更可能）</label>
+        <label for="dateInput">表示日（日付をクリックまたはタップするとカレンダーから変更できます）</label>
         <div class="date-nav">
-          <button id="btnPrev7" type="button" aria-label="7日前">&lt;&lt;</button>
-          <button id="btnPrev1" type="button" aria-label="1日前">&lt;</button>
+          <button id="btnPrev7" type="button" aria-label="1週間前"><span class="nav-step">1週間</span><span class="nav-arrow">&lt;&lt;</span></button>
+          <button id="btnPrev1" type="button" aria-label="1日前"><span class="nav-step">1日</span><span class="nav-arrow">&lt;</span></button>
           <div class="date-display-wrap">
             <div id="dateDisplay" class="date-display" aria-hidden="true">-</div>
             <input id="dateInput" type="date" disabled>
           </div>
-          <button id="btnNext1" type="button" aria-label="1日後">&gt;</button>
-          <button id="btnNext7" type="button" aria-label="7日後">&gt;&gt;</button>
+          <button id="btnNext1" type="button" aria-label="1日後"><span class="nav-step">1日</span><span class="nav-arrow">&gt;</span></button>
+          <button id="btnNext7" type="button" aria-label="1週間後"><span class="nav-step">1週間</span><span class="nav-arrow">&gt;&gt;</span></button>
         </div>
       </div>
     </div>
@@ -248,11 +259,11 @@
     </div>
 
     <div class="seekbar">
-      <button id="btnPrev60" class="double" type="button" aria-label="1時間前">≪</button>
-      <button id="btnPrev10" type="button" aria-label="10分前">←</button>
+      <button id="btnPrev60" class="double" type="button" aria-label="1時間前"><span class="nav-step">1時間</span><span class="nav-arrow">&lt;&lt;</span></button>
+      <button id="btnPrev10" type="button" aria-label="10分前"><span class="nav-step">10分</span><span class="nav-arrow">&lt;</span></button>
       <div id="tideName" class="tide-name" aria-label="潮名（目安）" title="月齢に基づく目安">-</div>
-      <button id="btnNext10" type="button" aria-label="10分後">→</button>
-      <button id="btnNext60" class="double" type="button" aria-label="1時間後">≫</button>
+      <button id="btnNext10" type="button" aria-label="10分後"><span class="nav-step">10分</span><span class="nav-arrow">&gt;</span></button>
+      <button id="btnNext60" class="double" type="button" aria-label="1時間後"><span class="nav-step">1時間</span><span class="nav-arrow">&gt;&gt;</span></button>
     </div>
 
     <div class="range-row">
@@ -711,6 +722,11 @@ function computeUpIntervals(riseMinute, setMinute, alwaysUp) {
   return [[0, setMinute]];
 }
 
+// Radius of the yellow selected-tide-point dot on the chart (was 6; doubled
+// per request for better visibility). No stroke/border is drawn around this
+// dot, so there is nothing else to scale proportionally.
+const SELECTION_DOT_RADIUS = 12;
+
 // Sun/moon bands sit in their own dedicated rows above the plot, aligned to
 // the same x-axis (time) coordinates as the plot below them.
 const SUN_MOON_BAND_H = 28;
@@ -977,7 +993,7 @@ function drawSelection(point) {
 
   ctx.fillStyle = theme.selectPoint;
   ctx.beginPath();
-  ctx.arc(x, y, 6, 0, Math.PI * 2);
+  ctx.arc(x, y, SELECTION_DOT_RADIUS, 0, Math.PI * 2);
   ctx.fill();
 
   const riverPoint = currentRiverSeries.find(item => item.minute === point.minute);
