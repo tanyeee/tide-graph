@@ -115,6 +115,10 @@
   .swatch { display:inline-block; width:1.4em; height:.22em; margin:0 .35em .18em 0; vertical-align:middle; border-radius:999px; }
   .swatch.tide { background:var(--highlight); }
   .swatch.river { background:var(--river); }
+  .swatch.now {
+    background:repeating-linear-gradient(to right, var(--now) 0, var(--now) 4px, transparent 4px, transparent 8px);
+    border-radius:0;
+  }
   .chart-date-title {
     text-align:center; font-weight:800; font-size:clamp(18px,2.4vw,22px);
     color:var(--text); margin-bottom:6px;
@@ -180,6 +184,8 @@
     .seekbar button { width:52px; height:56px; font-size:28px; }
     .seekbar .double { font-size:24px; }
     .tide-name { font-size:24px; }
+    .legend.chart-legend { font-size:12px; }
+    .legend.chart-legend .swatch { margin-right:.25em; }
   }
 </style>
 </head>
@@ -211,7 +217,7 @@
     </div>
 
     <div class="legend chart-legend">
-      <span class="swatch tide"></span>左軸：天文潮位（m）　<span class="swatch river"></span>河川水位
+      <span class="swatch tide"></span>左軸：天文潮位（m）　<span class="swatch river"></span>河川水位　<span class="swatch now"></span>現在時刻
     </div>
 
     <div class="range-row">
@@ -238,8 +244,16 @@
         <label for="riverStation">水位観測地点</label>
         <select id="riverStation">
           <option value="">表示しない</option>
-          <option value="kuji-ohashi" selected>久慈大橋</option>
-          <option value="sakakibashi">榊橋</option>
+          <optgroup label="久慈川水系">
+            <option value="kuji-ohashi" selected>久慈大橋</option>
+            <option value="sakakibashi">榊橋</option>
+          </optgroup>
+          <optgroup label="涸沼・那珂川水系">
+            <option value="hinuma-bashi">涸沼橋</option>
+            <option value="minato-ohashi">湊大橋</option>
+            <option value="suifu-bashi">水府橋</option>
+            <option value="kunita-ohashi">国田大橋</option>
+          </optgroup>
         </select>
       </div>
     </div>

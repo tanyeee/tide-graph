@@ -2,12 +2,48 @@ export const RIVER_STATIONS = Object.freeze({
   'kuji-ohashi': Object.freeze({
     id: 'kuji-ohashi',
     name: '久慈大橋',
+    riverId: 'kuji',
+    riverName: '久慈川水系',
     url: 'https://tanyeee.github.io/kuji-waterlevel/data/stations/kuji-ohashi/recent_10min.json'
   }),
   sakakibashi: Object.freeze({
     id: 'sakakibashi',
     name: '榊橋',
+    riverId: 'kuji',
+    riverName: '久慈川水系',
     url: 'https://tanyeee.github.io/kuji-waterlevel/data/stations/sakakibashi/recent_10min.json'
+  }),
+  // The following four stations belong to the 涸沼・那珂川水系 group as
+  // classified by kuji-waterlevel's config/stations.json (river id
+  // "hinuma-nakagawa"), which groups them together rather than splitting
+  // 涸沼川 and 那珂川 into separate groups.
+  'hinuma-bashi': Object.freeze({
+    id: 'hinuma-bashi',
+    name: '涸沼橋',
+    riverId: 'hinuma-nakagawa',
+    riverName: '涸沼・那珂川水系',
+    url: 'https://tanyeee.github.io/kuji-waterlevel/data/stations/hinuma-bashi/recent_10min.json'
+  }),
+  'minato-ohashi': Object.freeze({
+    id: 'minato-ohashi',
+    name: '湊大橋',
+    riverId: 'hinuma-nakagawa',
+    riverName: '涸沼・那珂川水系',
+    url: 'https://tanyeee.github.io/kuji-waterlevel/data/stations/minato-ohashi/recent_10min.json'
+  }),
+  'suifu-bashi': Object.freeze({
+    id: 'suifu-bashi',
+    name: '水府橋',
+    riverId: 'hinuma-nakagawa',
+    riverName: '涸沼・那珂川水系',
+    url: 'https://tanyeee.github.io/kuji-waterlevel/data/stations/suifu-bashi/recent_10min.json'
+  }),
+  'kunita-ohashi': Object.freeze({
+    id: 'kunita-ohashi',
+    name: '国田大橋',
+    riverId: 'hinuma-nakagawa',
+    riverName: '涸沼・那珂川水系',
+    url: 'https://tanyeee.github.io/kuji-waterlevel/data/stations/kunita-ohashi/recent_10min.json'
   })
 });
 
