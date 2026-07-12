@@ -106,6 +106,51 @@ export function riverSeriesForWindow(records, startDate, days) {
     .filter(record => record.minute >= 0 && record.minute < windowMinutes);
 }
 
+// Linearly interpolates a value at `minute` from a series that is a
+// complete, gapless grid spaced `stepMinutes` apart starting at minute 0
+// (e.g. the tide series produced for a display window, which always has a
+// point at every 10-minute mark with no missing entries). This index-based
+// interpolation is only safe for a series with that guarantee — it is NOT a
+// substitute for timestamp-based mapping of possibly-irregular/sparse data
+// (that's what riverSeriesForWindow/timestampToWindowMinute are for).
+function interpolateAtMinute(series, minute, stepMinutes) {
+  if (!Array.isArray(series) || !series.length || !Number.isFinite(minute)) return null;
+  const position = minute / stepMinutes;
+  const lowerIndex = Math.max(0, Math.min(series.length - 1, Math.floor(position)));
+  const upperIndex = Math.max(0, Math.min(series.length - 1, Math.ceil(position)));
+  const lower = series[lowerIndex];
+  const upper = series[upperIndex];
+  if (!Number.isFinite(lower?.height) || !Number.isFinite(upper?.height)) return null;
+  if (lowerIndex === upperIndex) return lower.height;
+  const fraction = position - lowerIndex;
+  return lower.height + (upper.height - lower.height) * fraction;
+}
+
+// Pairs each river reading with the tide height at that exact minute so the
+// two distributions being percentile-fitted (see calculateRiverAxis) share
+// the same time basis. Pairing used to be an exact Map lookup keyed by
+// minute, which silently dropped any river point whose own timestamp didn't
+// land precisely on the tide series' step marks (e.g. a feed reporting on
+// :05/:15/:25 instead of :00/:10/:20, or any other grid offset) — in the
+// worst case that could zero out the entire paired sample and disable the
+// river axis outright. Interpolating into the tide series (a complete,
+// gapless grid — see interpolateAtMinute) always succeeds for any minute
+// inside the displayed window, regardless of how the river feed's own
+// timestamps happen to be aligned, or how much of the window it currently
+// covers.
+export function pairRiverWithTide(riverSeries, tideSeries, stepMinutes = 10) {
+  const pairedTides = [];
+  const pairedLevels = [];
+  for (const point of riverSeries) {
+    const tideHeight = interpolateAtMinute(tideSeries, point.minute, stepMinutes);
+    if (Number.isFinite(tideHeight)) {
+      pairedTides.push(tideHeight);
+      pairedLevels.push(point.level);
+    }
+  }
+  return { pairedTides, pairedLevels };
+}
+
 export function percentile(values, q) {
   if (!values.length) return null;
   const sorted = [...values].sort((a, b) => a - b);

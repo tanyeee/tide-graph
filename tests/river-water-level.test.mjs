@@ -4,6 +4,7 @@ import {
   axisTicks,
   calculateRiverAxis,
   normalizeRiverPayload,
+  pairRiverWithTide,
   percentile,
   riverSeriesForWindow,
   timestampToWindowMinute
@@ -65,4 +66,79 @@ test('keeps robust percentile fitting when one extreme outlier is present', () =
   const tidePosition = (100 - tideLow) / 100;
   const riverPosition = (axis.max - riverLow) / (axis.max - axis.min);
   assert.ok(Math.abs(tidePosition - riverPosition) < 1e-9);
+});
+
+// Regression coverage for a reported "river line drifts in time" symptom
+// (correct in a yesterday~today 2-day view, wrong in a today-only 1-day
+// view, self-correcting later in the day). The suspected mechanism was
+// riverSeriesForWindow mapping records by array index/position instead of
+// their own timestamp, which would shift the whole series whenever the feed
+// doesn't start at the display window's own minute 0 (data arriving mid-day)
+// or is truncated before "now" (delivery delay). These tests exercise
+// exactly those two shapes directly against real feed characteristics.
+test('maps a record starting well after the display day\'s midnight to its own timestamp, not array index 0', () => {
+  // If mapping were index-based (record[0] assumed to be minute 0, each
+  // subsequent record +10min), this data — which only starts at 09:00 —
+  // would be placed at minutes [0, 10, 20] instead of [540, 550, 560].
+  const records = [
+    { timestamp: '2026-07-10T09:00', value: 1.0 },
+    { timestamp: '2026-07-10T09:10', value: 1.1 },
+    { timestamp: '2026-07-10T09:20', value: 1.2 }
+  ];
+  const series = riverSeriesForWindow(records, '2026-07-10', 1);
+  assert.deepEqual(series.map(item => item.minute), [540, 550, 560]);
+});
+
+test('keeps correct minute mapping when the feed is truncated before "now" (delivery delay)', () => {
+  // A gap before the last record (simulating a delayed/incomplete feed that
+  // stops short of the current moment) must not compress or shift later
+  // records to sit right after the earlier ones; each keeps its own
+  // timestamp-derived minute.
+  const records = [
+    { timestamp: '2026-07-10T00:00', value: 2.0 },
+    { timestamp: '2026-07-10T00:10', value: 2.1 },
+    { timestamp: '2026-07-10T05:00', value: 2.2 }
+  ];
+  const series = riverSeriesForWindow(records, '2026-07-10', 1);
+  assert.deepEqual(series.map(item => item.minute), [0, 10, 300]);
+});
+
+test('maps the same real timestamp to the same clock-of-day position in both a 1-day and a 2-day (yesterday~today) view', () => {
+  const records = [
+    { timestamp: '2026-07-12T08:00', value: 1.0 },
+    { timestamp: '2026-07-13T08:00', value: 1.5 }
+  ];
+  const oneDayToday = riverSeriesForWindow(records, '2026-07-13', 1);
+  const twoDayYesterdayToday = riverSeriesForWindow(records, '2026-07-12', 2);
+
+  const inOneDay = oneDayToday.find(item => item.label === '2026-07-13 08:00');
+  const inTwoDay = twoDayYesterdayToday.find(item => item.label === '2026-07-13 08:00');
+  assert.equal(inOneDay.minute, 480);
+  assert.equal(inTwoDay.minute, 1920);
+  assert.equal(inOneDay.minute % 1440, inTwoDay.minute % 1440);
+});
+
+test('pairRiverWithTide interpolates the tide height even when a river reading does not land on the tide grid\'s exact minute', () => {
+  // A regularly-spaced (10-min step), gapless tide series, as buildSeries()
+  // in index.html always produces for the displayed window.
+  const tideSeries = Array.from({ length: 7 }, (_, i) => ({ minute: i * 10, height: 100 + i * 10 }));
+
+  // River readings exactly on the grid still pair to the exact tide value.
+  const onGrid = pairRiverWithTide([{ minute: 20, level: 1.0 }], tideSeries);
+  assert.deepEqual(onGrid, { pairedTides: [120], pairedLevels: [1.0] });
+
+  // A river reading off the grid (e.g. a feed reporting on :05 instead of
+  // :00/:10/...) used to be silently dropped by an exact Map lookup; it now
+  // gets a linearly interpolated tide height instead of being discarded.
+  const offGrid = pairRiverWithTide([{ minute: 25, level: 2.0 }], tideSeries);
+  assert.equal(offGrid.pairedLevels.length, 1);
+  assert.equal(offGrid.pairedTides[0], 125); // halfway between minute 20 (120) and 30 (130)
+
+  // A minute outside the tide series' own range clamps to the series'
+  // nearest boundary value rather than extrapolating or being dropped. In
+  // practice this never triggers: currentRiverSeries is already filtered by
+  // riverSeriesForWindow to the same [0, windowMinutes) window that the tide
+  // series spans, so a river point's minute is always in range.
+  const outOfRange = pairRiverWithTide([{ minute: 999, level: 3.0 }], tideSeries);
+  assert.deepEqual(outOfRange, { pairedTides: [160], pairedLevels: [3.0] });
 });

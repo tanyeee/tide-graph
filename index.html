@@ -383,6 +383,7 @@ import {
   RIVER_STATIONS,
   calculateRiverAxis,
   normalizeRiverPayload,
+  pairRiverWithTide,
   riverSeriesForWindow
 } from './js/river-water-level.js';
 import { getTimes, getMoonTimes, getMoonIllumination } from './js/suncalc.js';
@@ -930,13 +931,11 @@ function drawChart() {
     return m.top + (yMax - height) / (yMax - yMin) * plotH;
   }
 
-  const tideByMinute = new Map(currentSeries.map(point => [point.minute, point.height]));
-  const pairedTides = currentRiverSeries
-    .map(point => tideByMinute.get(point.minute))
-    .filter(Number.isFinite);
-  const pairedLevels = currentRiverSeries
-    .filter(point => Number.isFinite(tideByMinute.get(point.minute)))
-    .map(point => point.level);
+  // pairRiverWithTide interpolates the tide height at each river point's own
+  // minute (see js/river-water-level.js) instead of requiring an exact
+  // Map-keyed match, so pairing isn't at the mercy of the river feed's own
+  // timestamp alignment.
+  const { pairedTides, pairedLevels } = pairRiverWithTide(currentRiverSeries, currentSeries);
   currentRiverAxis = hasRiver
     ? calculateRiverAxis(pairedTides, pairedLevels, { min: yMin, max: yMax })
     : null;
