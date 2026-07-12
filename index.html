@@ -367,7 +367,7 @@ import {
   normalizeRiverPayload,
   riverSeriesForWindow
 } from './js/river-water-level.js';
-import { getTimes, getMoonTimes } from './js/suncalc.js';
+import { getTimes, getMoonTimes, getMoonIllumination } from './js/suncalc.js';
 import {
   interpolateHeightAtMinute,
   shouldScheduleMarkerRefresh
@@ -716,6 +716,19 @@ function getLocalSunTimes(dateStr) {
   return getTimes(noon, SUN_MOON_LAT, SUN_MOON_LON);
 }
 
+// Maps SunCalc's moon phase (0..1, 0=new, 0.25=first quarter, 0.5=full,
+// 0.75=last quarter) to one of the 8 standard moon-phase emoji. This is
+// independent of getJapaneseTideName's own lunar-age calculation (used only
+// for 潮名) — the two are unrelated and neither is changed by the other.
+const MOON_PHASE_EMOJI = ['🌑', '🌒', '🌓', '🌔', '🌕', '🌖', '🌗', '🌘'];
+
+function getMoonPhaseEmoji(dateStr) {
+  const noon = new Date(`${dateStr}T12:00:00+09:00`);
+  const { phase } = getMoonIllumination(noon);
+  const index = Math.round(phase * 8) % 8;
+  return MOON_PHASE_EMOJI[index];
+}
+
 // SunCalc.getMoonTimes scans a fixed UTC calendar day, which does not line up
 // with a JST calendar day (JST = UTC+9). To find the rise/set events that fall
 // within a given JST date, query the UTC day containing that date's start and
@@ -829,9 +842,10 @@ function drawSunMoonBands(xFromMinute) {
     const dayOffsetMin = day * 24 * 60;
     const sunTimes = getLocalSunTimes(dateStr);
     const moonTimes = getLocalMoonTimes(dateStr);
+    const moonEmoji = getMoonPhaseEmoji(dateStr);
 
     drawSunMoonBand(
-      xFromMinute, dayOffsetMin, SUN_MOON_MOON_Y, '#39c5cf', '🌙',
+      xFromMinute, dayOffsetMin, SUN_MOON_MOON_Y, '#39c5cf', moonEmoji,
       moonTimes.rise, moonTimes.set, moonTimes.alwaysUp
     );
     drawSunMoonBand(
