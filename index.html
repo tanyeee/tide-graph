@@ -817,11 +817,22 @@ function drawSunMoonBand(xFromMinute, dayOffsetMin, y, color, icon, riseDate, se
   });
   ctx.globalAlpha = 1;
 
-  const dayCenterX = xFromMinute(dayOffsetMin + 720);
+  // Emoji is centered within each visible ("above horizon") interval rather
+  // than at a fixed day-center position, so it tracks the actual rise/set
+  // window — including both halves of a day that wraps past midnight (set
+  // then rise again). An interval narrower than the emoji glyph itself is
+  // skipped rather than drawn squeezed/overlapping its rise/set labels; this
+  // single width check keeps label-collision avoidance simple.
   ctx.font = `${SUN_MOON_ICON_PX}px sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(icon, dayCenterX, y + SUN_MOON_BAND_H / 2 + 1);
+  intervals.forEach(([a, b]) => {
+    const x1 = xFromMinute(dayOffsetMin + a);
+    const x2 = xFromMinute(dayOffsetMin + b);
+    if (x2 - x1 < SUN_MOON_ICON_PX) return;
+    const intervalCenterX = (x1 + x2) / 2;
+    ctx.fillText(icon, intervalCenterX, y + SUN_MOON_BAND_H / 2 + 1);
+  });
 
   const dayStartX = xFromMinute(dayOffsetMin);
   const dayEndX = xFromMinute(dayOffsetMin + 1440);
