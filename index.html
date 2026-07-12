@@ -227,7 +227,13 @@
   @media (max-width: 780px) {
     body { padding:12px; }
     .card { padding:14px; border-radius:14px; }
-    canvas { width:calc(100% + 28px); margin-left:-14px; margin-right:-14px; border-radius:0; }
+    /* Must match #chart's specificity (an ID selector) — the base #chart
+       rule above sets width:100% and border-radius:16px, and a lower-
+       specificity `canvas { ... }` type selector here would lose on those
+       two properties (only margin, which #chart doesn't set, would apply),
+       leaving the canvas shifted left by the negative margin without the
+       intended +28px full-bleed width to compensate. */
+    #chart { width:calc(100% + 28px); margin-left:-14px; margin-right:-14px; border-radius:0; }
     .meta { grid-template-columns:repeat(2,minmax(0,1fr)); }
     .range-row { width:100%; justify-content:space-between; }
     #selectedHeight { font-size:22px; }
