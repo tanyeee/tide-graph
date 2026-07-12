@@ -26,7 +26,7 @@
     --pill:#f9fafb;
     --highlight:#facc15;
     --river:#0284c7;
-    --now:#db2777;
+    --now:#dc2626;
     --button-bg:#ffffff;
     --button-text:#111827;
     --shadow:0 6px 20px rgba(0,0,0,.04);
@@ -46,7 +46,7 @@
       --pill:#0f172a;
       --highlight:#fde047;
       --river:#38bdf8;
-      --now:#f472b6;
+      --now:#ef4444;
       --button-bg:#0f172a;
       --button-text:#e5edf7;
       --shadow:none;
@@ -156,13 +156,39 @@
   .swatch { display:inline-block; width:1.4em; height:.22em; margin:0 .35em .18em 0; vertical-align:middle; border-radius:999px; }
   .swatch.tide { background:var(--highlight); }
   .swatch.river { background:var(--river); }
-  .swatch.now {
-    background:repeating-linear-gradient(to right, var(--now) 0, var(--now) 4px, transparent 4px, transparent 8px);
-    border-radius:0;
+  .legend-symbol {
+    display:inline-flex; width:1.65em; height:1em; margin:0 .3em -.1em 0;
+    position:relative; align-items:center; justify-content:center; vertical-align:baseline;
   }
-  canvas {
+  .legend-symbol.selection::before {
+    content:""; width:.72em; height:.72em; border-radius:50%; background:var(--highlight);
+  }
+  .legend-symbol.now::before {
+    content:""; position:absolute; left:0; right:0; top:50%; height:2px;
+    background:repeating-linear-gradient(to right, var(--now) 0, var(--now) 4px, transparent 4px, transparent 7px);
+  }
+  .legend-symbol.now::after {
+    content:""; position:relative; width:.68em; height:.68em; border-radius:50%; background:var(--now);
+  }
+  .chart-stack { position:relative; overflow:hidden; border-radius:16px; }
+  #chart {
     width:100%; height:auto; display:block; border:1px solid var(--border); border-radius:16px; background:var(--chart-bg);
     touch-action:manipulation;
+  }
+  .now-pulse {
+    --pulse-scale:4.44;
+    position:absolute; display:none; z-index:2; pointer-events:none;
+    border:2px solid rgba(255,255,255,.5); border-radius:50%;
+    transform:translate(-50%,-50%) scale(1);
+    animation:now-pulse 3s ease-out infinite;
+  }
+  @keyframes now-pulse {
+    0% { opacity:1; transform:translate(-50%,-50%) scale(1); }
+    50% { opacity:0; transform:translate(-50%,-50%) scale(var(--pulse-scale)); }
+    100% { opacity:0; transform:translate(-50%,-50%) scale(var(--pulse-scale)); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .now-pulse { display:none !important; animation:none; }
   }
   .hl {
     display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:14px;
@@ -253,15 +279,18 @@
       </div>
     </div>
 
-    <canvas id="chart" width="1040" height="661" aria-label="天文潮位と河川水位の比較グラフ"></canvas>
+    <div class="chart-stack">
+      <canvas id="chart" width="1040" height="661" aria-label="天文潮位と河川水位の比較グラフ"></canvas>
+      <div id="nowPulse" class="now-pulse" aria-hidden="true"></div>
+    </div>
 
     <div class="legend chart-legend">
-      <span class="swatch tide"></span>天文潮位（m）　<span class="swatch river"></span>河川水位　<span class="swatch now"></span>現在時刻
+      <span class="swatch tide"></span>天文潮位（m）　<span class="swatch river"></span>河川水位　<span class="legend-symbol selection" aria-hidden="true"></span>選択時刻　<span class="legend-symbol now" aria-hidden="true"></span>現在時刻
     </div>
 
     <div class="meta">
       <div class="pill"><div class="k">選択時刻</div><div class="v" id="selectedTime">-</div></div>
-      <div class="pill"><div class="k">潮位</div><div class="v" id="selectedHeight">-</div></div>
+      <div class="pill"><div class="k">天文潮位</div><div class="v" id="selectedHeight">-</div></div>
     </div>
 
     <div class="seekbar">
@@ -339,6 +368,10 @@ import {
   riverSeriesForWindow
 } from './js/river-water-level.js';
 import { getTimes, getMoonTimes } from './js/suncalc.js';
+import {
+  interpolateHeightAtMinute,
+  shouldScheduleMarkerRefresh
+} from './js/chart-markers.js';
 
 // Observation point: JMA tide station D1 (日立 / Hitachi), 36°30'N 140°38'E.
 const SUN_MOON_LAT = 36.5;
@@ -348,6 +381,7 @@ let tideData = [];
 let dataMap = {};
 const chart = document.getElementById('chart');
 const ctx = chart.getContext('2d');
+const nowPulseEl = document.getElementById('nowPulse');
 const dateDisplayEl = document.getElementById('dateDisplay');
 const dateInput = document.getElementById('dateInput');
 const btn1 = document.getElementById('btn1');
@@ -381,7 +415,9 @@ let riverMeta = {};
 let currentRiverSeries = [];
 let currentRiverAxis = null;
 let riverRequestId = 0;
+let nowMarkerRefreshTimer = null;
 const yearCache = new Map();
+const reducedMotionQuery = window.matchMedia?.('(prefers-reduced-motion: reduce)');
 
 function setDataStatus(message, state = 'ready') {
   dataStatusEl.textContent = message;
@@ -732,6 +768,8 @@ function computeUpIntervals(riseMinute, setMinute, alwaysUp) {
 // per request for better visibility). No stroke/border is drawn around this
 // dot, so there is nothing else to scale proportionally.
 const SELECTION_DOT_RADIUS = 12;
+const NOW_DOT_RADIUS = 9;
+const NOW_PULSE_MAX_RADIUS = 40;
 
 // Sun/moon bands sit in their own dedicated rows above the plot, aligned to
 // the same x-axis (time) coordinates as the plot below them.
@@ -963,16 +1001,56 @@ function drawChart() {
     ctx.moveTo(xNow, m.top);
     ctx.lineTo(xNow, H - m.bottom);
     ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.fillStyle = css('--now');
-    ctx.font = 'bold 20px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'bottom';
-    ctx.fillText('', xNow, m.top - 6);
     ctx.restore();
   }
 
   return {selectLine, selectPoint};
+}
+
+function currentMarkerPosition() {
+  const nowMarker = getNowMarkerInfo();
+  if (!nowMarker || !plot) return null;
+  const height = interpolateHeightAtMinute(currentSeries, nowMarker.minute);
+  if (!Number.isFinite(height)) return null;
+  return {
+    x: plot.xFromMinute(nowMarker.minute),
+    y: plot.yFromHeight(height)
+  };
+}
+
+function drawNowIndicator() {
+  const marker = currentMarkerPosition();
+  if (!marker) return;
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(plot.m.left, plot.m.top, plot.plotW, plot.plotH);
+  ctx.clip();
+  ctx.fillStyle = css('--now');
+  ctx.beginPath();
+  ctx.arc(marker.x, marker.y, NOW_DOT_RADIUS, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+function updateNowPulseElement() {
+  const marker = currentMarkerPosition();
+  if (!marker || document.hidden || reducedMotionQuery?.matches) {
+    nowPulseEl.style.display = 'none';
+    return false;
+  }
+
+  const chartRect = chart.getBoundingClientRect();
+  const displayScale = chartRect.width / chart.width;
+  const startSize = NOW_DOT_RADIUS * 2 * displayScale;
+  nowPulseEl.style.left = `${marker.x / chart.width * 100}%`;
+  nowPulseEl.style.top = `${marker.y / chart.height * 100}%`;
+  nowPulseEl.style.width = `${startSize}px`;
+  nowPulseEl.style.height = `${startSize}px`;
+  nowPulseEl.style.borderWidth = `${Math.max(1, 3 * displayScale)}px`;
+  nowPulseEl.style.setProperty('--pulse-scale', String(NOW_PULSE_MAX_RADIUS / NOW_DOT_RADIUS));
+  nowPulseEl.style.display = 'block';
+  return true;
 }
 
 function nearestPointFromClient(clientX) {
@@ -986,7 +1064,7 @@ function nearestPointFromClient(clientX) {
   return currentSeries[idx];
 }
 
-function drawSelection(point) {
+function drawSelection(point, updateMeta = true) {
   currentSelectedIndex = currentSeries.findIndex(p => p.minute === point.minute && p.label === point.label);
   if (currentSelectedIndex < 0) currentSelectedIndex = 0;
   const theme = drawChart();
@@ -1016,8 +1094,28 @@ function drawSelection(point) {
     }
   }
 
-  selectedTimeEl.textContent = point.label.replace(/-/g, '/');
-  selectedHeightEl.textContent = `${point.height.toFixed(1)} cm`;
+  // The current-time marker is intentionally drawn last. When the selected
+  // point is also the current time, red remains the dominant live indicator.
+  drawNowIndicator();
+
+  if (updateMeta) {
+    selectedTimeEl.textContent = point.label.replace(/-/g, '/');
+    selectedHeightEl.textContent = `${point.height.toFixed(1)} cm`;
+  }
+}
+
+function syncNowMarkerEffects() {
+  if (nowMarkerRefreshTimer !== null) clearTimeout(nowMarkerRefreshTimer);
+  nowMarkerRefreshTimer = null;
+  const hasCurrentMarker = !!currentMarkerPosition();
+  updateNowPulseElement();
+  if (!shouldScheduleMarkerRefresh(hasCurrentMarker, document.hidden)) return;
+
+  const delayToNextMinute = 60050 - (Date.now() % 60000);
+  nowMarkerRefreshTimer = setTimeout(() => {
+    if (currentSeries.length) drawSelection(currentSeries[currentSelectedIndex], false);
+    syncNowMarkerEffects();
+  }, delayToNextMinute);
 }
 
 function refresh(resetSelection = true) {
@@ -1049,8 +1147,8 @@ function refresh(resetSelection = true) {
   if (resetSelection) currentSelectedIndex = getInitialSelectedIndex();
   currentSelectedIndex = Math.max(0, Math.min(currentSeries.length - 1, currentSelectedIndex));
   updateTideLists(dateStr);
-  drawChart();
   drawSelection(currentSeries[currentSelectedIndex]);
+  syncNowMarkerEffects();
 }
 
 btn1.addEventListener('click', () => {
@@ -1143,8 +1241,19 @@ if (window.matchMedia) {
   else if (mq.addListener) mq.addListener(refresh);
 }
 
+if (reducedMotionQuery) {
+  if (reducedMotionQuery.addEventListener) {
+    reducedMotionQuery.addEventListener('change', syncNowMarkerEffects);
+  } else if (reducedMotionQuery.addListener) {
+    reducedMotionQuery.addListener(syncNowMarkerEffects);
+  }
+}
+
+document.addEventListener('visibilitychange', syncNowMarkerEffects);
+window.addEventListener('resize', updateNowPulseElement);
+
 restoreRiverStationSelection();
-initializeData().catch(error => {
+initializeData().then(syncNowMarkerEffects).catch(error => {
   console.error(error);
   dateInput.disabled = true;
   setDataStatus(`潮位データを読み込めませんでした：${error.message}`, 'error');
