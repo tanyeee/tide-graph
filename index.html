@@ -160,13 +160,20 @@
     display:inline-flex; width:1.65em; height:1em; margin:0 .3em -.1em 0;
     position:relative; align-items:center; justify-content:center; vertical-align:baseline;
   }
+  /* Selection swatch: a vertical line with the selected-point dot on top,
+     matching the actual chart marker (a solid --muted vertical line drawn
+     from drawSelection, topped with a --highlight dot). */
   .legend-symbol.selection::before {
-    content:""; width:.72em; height:.72em; border-radius:50%; background:var(--highlight);
+    content:""; position:absolute; top:0; bottom:0; left:50%; width:2px;
+    transform:translateX(-50%); background:var(--muted);
   }
-  .legend-symbol.now::before {
-    content:""; position:absolute; left:0; right:0; top:50%; height:2px;
-    background:repeating-linear-gradient(to right, var(--now) 0, var(--now) 4px, transparent 4px, transparent 7px);
+  .legend-symbol.selection::after {
+    content:""; position:relative; width:.72em; height:.72em; border-radius:50%; background:var(--highlight);
   }
+  /* Now-time swatch: a solid dot only, matching the canvas dot drawn by
+     drawNowIndicator() / the #nowPulse ring (the dashed line this used to
+     also show was removed from the chart, so the legend no longer needs it
+     either). */
   .legend-symbol.now::after {
     content:""; position:relative; width:.68em; height:.68em; border-radius:50%; background:var(--now);
   }
@@ -1004,19 +1011,10 @@ function drawChart() {
     ctx.restore();
   }
 
-  const nowMarker = getNowMarkerInfo();
-  if (nowMarker) {
-    const xNow = xFromMinute(nowMarker.minute);
-    ctx.save();
-    ctx.strokeStyle = css('--now');
-    ctx.lineWidth = 3;
-    ctx.setLineDash([8, 8]);
-    ctx.beginPath();
-    ctx.moveTo(xNow, m.top);
-    ctx.lineTo(xNow, H - m.bottom);
-    ctx.stroke();
-    ctx.restore();
-  }
+  // The current-time indicator is now drawn as a solid dot with an animated
+  // pulse ring (drawNowIndicator / #nowPulse) instead of this vertical
+  // dashed line, so the dashed-line drawing that used to live here has been
+  // removed.
 
   return {selectLine, selectPoint};
 }
