@@ -1056,6 +1056,28 @@ function drawNowIndicator() {
   ctx.restore();
 }
 
+// Converts a point in the canvas's internal drawing coordinates (the fixed
+// chart.width/chart.height space that drawNowIndicator()'s arc(marker.x,
+// marker.y, ...) is drawn in) to CSS pixels relative to #nowPulse's
+// positioning ancestor (chart.parentElement, i.e. .chart-stack, which is
+// position:relative). Percentage-based left/top (the previous approach)
+// silently assumed the canvas's rendered box exactly matched .chart-stack's
+// box, which breaks in two ways:
+//  1. On narrow screens (<=780px) the canvas gets `margin-left:-14px` (a
+//     full-bleed effect) while .chart-stack does not, so the canvas's true
+//     on-screen position drifts left of .chart-stack's box — the dominant,
+//     "obvious on iPhone" source of the misalignment.
+//  2. chartRect (getBoundingClientRect()) is the canvas's border-box, but
+//     the 1040x661 bitmap is actually stretched into the content-box (the
+//     canvas has a 1px border on each side), so using chartRect.width alone
+//     as the scale denominator is off by ~2px — the "subtle even on
+//     desktop" drift.
+// Measuring both the canvas and its positioning parent live via
+// getBoundingClientRect() sidesteps both issues without depending on any
+// assumption about their relative CSS box layout, and chart.clientWidth/
+// clientHeight (content-box, border excluded) give the true bitmap-to-CSS
+// scale. X and Y are scaled independently in case the aspect ratio ever
+// drifts from the canvas's own width/height attributes.
 function updateNowPulseElement() {
   const marker = currentMarkerPosition();
   if (!marker || document.hidden || reducedMotionQuery?.matches) {
@@ -1064,13 +1086,23 @@ function updateNowPulseElement() {
   }
 
   const chartRect = chart.getBoundingClientRect();
-  const displayScale = chartRect.width / chart.width;
-  const startSize = NOW_DOT_RADIUS * 2 * displayScale;
-  nowPulseEl.style.left = `${marker.x / chart.width * 100}%`;
-  nowPulseEl.style.top = `${marker.y / chart.height * 100}%`;
+  const parentRect = chart.parentElement.getBoundingClientRect();
+
+  const scaleX = chart.clientWidth / chart.width;
+  const scaleY = chart.clientHeight / chart.height;
+  const borderX = (chartRect.width - chart.clientWidth) / 2;
+  const borderY = (chartRect.height - chart.clientHeight) / 2;
+  const originX = chartRect.left - parentRect.left + borderX;
+  const originY = chartRect.top - parentRect.top + borderY;
+
+  const px = originX + marker.x * scaleX;
+  const py = originY + marker.y * scaleY;
+  const startSize = NOW_DOT_RADIUS * 2 * scaleX;
+  nowPulseEl.style.left = `${px}px`;
+  nowPulseEl.style.top = `${py}px`;
   nowPulseEl.style.width = `${startSize}px`;
   nowPulseEl.style.height = `${startSize}px`;
-  nowPulseEl.style.borderWidth = `${Math.max(1, 3 * displayScale)}px`;
+  nowPulseEl.style.borderWidth = `${Math.max(1, 3 * scaleX)}px`;
   nowPulseEl.style.setProperty('--pulse-scale', String(NOW_PULSE_MAX_RADIUS / NOW_DOT_RADIUS));
   nowPulseEl.style.display = 'block';
   return true;
