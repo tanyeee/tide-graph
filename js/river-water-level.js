@@ -151,6 +151,31 @@ export function pairRiverWithTide(riverSeries, tideSeries, stepMinutes = 10) {
   return { pairedTides, pairedLevels };
 }
 
+// Pairs raw river records (not windowed to a display range — typically the
+// full fetched recent_10min.json record set) with a tide height looked up
+// by each record's own real timestamp, via a caller-supplied getTideHeight
+// function. This is what makes river axis calibration independent of which
+// day(s)/day-count the viewer currently has selected: the percentile sample
+// fed to calculateRiverAxis is always drawn from the same underlying
+// dataset, not just whatever slice happens to be on screen. getTideHeight is
+// injected (rather than this module reading a global tide data map itself)
+// so this stays a pure, easily-testable function; the caller is responsible
+// for returning null/undefined for timestamps it has no tide data for
+// (e.g. a date outside the currently loaded tide-data year range), which
+// this function simply skips rather than treating as an error.
+export function pairRecordsWithTideLookup(records, getTideHeight) {
+  const pairedTides = [];
+  const pairedLevels = [];
+  for (const record of records) {
+    const height = getTideHeight(record.timestamp);
+    if (Number.isFinite(height)) {
+      pairedTides.push(height);
+      pairedLevels.push(record.value);
+    }
+  }
+  return { pairedTides, pairedLevels };
+}
+
 export function percentile(values, q) {
   if (!values.length) return null;
   const sorted = [...values].sort((a, b) => a - b);
@@ -159,6 +184,27 @@ export function percentile(values, q) {
   const upper = Math.ceil(index);
   if (lower === upper) return sorted[lower];
   return sorted[lower] + (sorted[upper] - sorted[lower]) * (index - lower);
+}
+
+// Mirrors index.html's getTideYAxisRange() bucketing formula exactly (same
+// rounding), but applied to an arbitrary tide value array instead of the
+// currently displayed window's currentSeries. Used to compute the
+// calibrateRiverAxis() extrapolation target from the FULL calibration
+// sample (see pairRecordsWithTideLookup) so the river axis calibration is
+// independent of which day(s)/day-count is on screen — using the window's
+// own getTideYAxisRange() output here as well as the sample would still let
+// the final calibrated {min,max} vary by view (e.g. a 2-day window spanning
+// a day with an unusually low tide changes the extrapolation target even
+// with an otherwise-identical percentile sample). This does not affect the
+// tide curve's own rendered axis, which still uses getTideYAxisRange() as
+// before — only calculateRiverAxis()'s 3rd argument uses this instead.
+export function tideAxisRangeForValues(values) {
+  if (!values.length) return null;
+  const minHeight = Math.min(...values);
+  const maxHeight = Math.max(...values);
+  const min = minHeight < 0 ? Math.floor(minHeight / 20) * 20 : 0;
+  const max = Math.max(120, Math.ceil(maxHeight / 40) * 40);
+  return { min, max };
 }
 
 export function calculateRiverAxis(tideValues, riverValues, tideAxis) {

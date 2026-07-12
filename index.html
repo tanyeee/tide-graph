@@ -383,8 +383,10 @@ import {
   RIVER_STATIONS,
   calculateRiverAxis,
   normalizeRiverPayload,
+  pairRecordsWithTideLookup,
   pairRiverWithTide,
-  riverSeriesForWindow
+  riverSeriesForWindow,
+  tideAxisRangeForValues
 } from './js/river-water-level.js';
 import { getTimes, getMoonTimes, getMoonIllumination } from './js/suncalc.js';
 import {
@@ -669,6 +671,33 @@ function buildSeries(startDate, days) {
   return out;
 }
 
+// Computes the astronomic tide height (cm) at an arbitrary real JST
+// timestamp — not necessarily inside the currently displayed window — using
+// the same dataMap lookup and hourly-linear-interpolation formula
+// buildSeries() uses for the displayed window (h0 + (h1-h0)*frac). This lets
+// the river axis calibration (see drawChart) pair every fetched river record
+// against its own real tide height, independent of which day(s)/day-count
+// happen to be on screen, without building a separate data-loading
+// mechanism: it reuses the already-loaded dataMap (populated for
+// currentYear-1..currentYear+1 in initializeData()), which comfortably
+// covers the ~48-168h a river feed's records span except right at a year
+// boundary if the adjacent year's data failed to load. Returns null when
+// the date isn't in dataMap, which callers treat as "skip this record".
+function tideHeightAtTimestamp(timestamp) {
+  const match = /^(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2})$/.exec(timestamp);
+  if (!match) return null;
+  const [, dateStr, hh, mm] = match;
+  const rec = dataMap[dateStr];
+  if (!rec) return null;
+  const h = Number(hh);
+  const m = Number(mm);
+  const nextRec = dataMap[addDays(dateStr, 1)];
+  const h0 = rec.hours[h];
+  const h1 = (h < 23) ? rec.hours[h + 1] : (nextRec ? nextRec.hours[0] : rec.hours[23]);
+  const frac = m / 60;
+  return Math.round((h0 + (h1 - h0) * frac) * 10) / 10;
+}
+
 function updateTideLists(dateStr) {
   const rec = dataMap[dateStr];
   highList.innerHTML = '';
@@ -931,13 +960,44 @@ function drawChart() {
     return m.top + (yMax - height) / (yMax - yMin) * plotH;
   }
 
-  // pairRiverWithTide interpolates the tide height at each river point's own
-  // minute (see js/river-water-level.js) instead of requiring an exact
-  // Map-keyed match, so pairing isn't at the mercy of the river feed's own
-  // timestamp alignment.
-  const { pairedTides, pairedLevels } = pairRiverWithTide(currentRiverSeries, currentSeries);
-  currentRiverAxis = hasRiver
-    ? calculateRiverAxis(pairedTides, pairedLevels, { min: yMin, max: yMax })
+  // Calibrate the river axis against the FULL fetched record set (all
+  // riverRecords, typically ~48-168h), not just currentRiverSeries (the
+  // records inside the currently displayed window). This is what makes the
+  // river/tide vertical calibration — and hence how their waveforms line up
+  // visually — the same regardless of which day(s)/day-count is selected:
+  // previously, a narrower or later-starting window (e.g. a 1-day "today"
+  // view early in the day) fed calculateRiverAxis a smaller, differently-
+  // shaped percentile sample than a fully-populated window (e.g. "yesterday"
+  // in a 2-day view) would, producing a visibly different calibration for
+  // the same underlying river/tide relationship.
+  //
+  // Rendering itself is unchanged: currentRiverSeries (window-filtered, via
+  // riverSeriesForWindow) is still what actually gets drawn as the river
+  // line, and the tide curve/gridlines still use yMin/yMax (getTideYAxisRange)
+  // exactly as before — only the *inputs to calculateRiverAxis* below change.
+  const fullDataPairs = pairRecordsWithTideLookup(riverRecords, tideHeightAtTimestamp);
+  const hasFullDataSample = fullDataPairs.pairedTides.length > 0;
+  // Fallback: if none of the full record set could be paired (e.g. a year
+  // boundary where the adjacent year's tide data isn't loaded), fall back to
+  // the previous window-only pairing rather than disabling the river axis
+  // outright.
+  const { pairedTides, pairedLevels } = hasFullDataSample
+    ? fullDataPairs
+    : pairRiverWithTide(currentRiverSeries, currentSeries);
+  // The extrapolation target (calculateRiverAxis's 3rd argument) must also
+  // be independent of the current window: reusing the window's own
+  // yMin/yMax here still lets the final calibrated {min,max} differ across
+  // view modes whenever the displayed day(s) span a different tide range
+  // (e.g. a 2-day window that happens to include an unusually low tide) —
+  // even with an otherwise-identical percentile sample. tideAxisRangeForValues
+  // computes that target from the same full-data sample, so it's stable
+  // across every view. In the fallback path there's no full-data sample to
+  // derive it from, so it matches the previous (window-based) behavior.
+  const calibrationTideAxis = hasFullDataSample
+    ? tideAxisRangeForValues(fullDataPairs.pairedTides)
+    : { min: yMin, max: yMax };
+  currentRiverAxis = hasRiver && calibrationTideAxis
+    ? calculateRiverAxis(pairedTides, pairedLevels, calibrationTideAxis)
     : null;
 
   function yFromRiverLevel(level) {
