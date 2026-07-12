@@ -72,7 +72,7 @@
   .data-status[data-state="error"], .river-status[data-state="error"] { color:#dc2626; font-weight:700; }
   .data-status[data-state="warning"], .river-status[data-state="warning"] { color:#d97706; font-weight:700; }
   .controls {
-    display:flex; flex-wrap:wrap; gap:12px; align-items:end; margin-bottom:18px;
+    display:flex; flex-wrap:wrap; gap:12px; align-items:end; justify-content:center; margin-bottom:18px;
   }
   .field {
     display:flex; flex-direction:column; gap:6px; min-width:0;
@@ -103,36 +103,34 @@
   }
   .refresh-wrap { margin-left:auto; }
   .refresh-btn { min-width:64px; height:44px; border-radius:14px; font-size:22px; font-weight:700; padding:0 14px; }
-  .date-nav-field { min-width:min(100%, 520px); }
+  .date-nav-field { width:min(100%, 520px); }
   .date-nav-label-main { display:block; font-size:16px; }
   .date-nav { display:grid; grid-template-columns:56px 56px 220px 56px 56px; align-items:center; gap:8px; justify-content:start; }
   /* Nav buttons (date-nav and seekbar) show a small step-size label above the
      arrow glyph, stacked via flex-column, so the arrow's own font-size lives
      on .nav-arrow instead of the button element directly. */
-  .date-nav button {
+  .date-nav > button {
     min-width:52px; padding:8px 6px; font-weight:700; border-radius:14px;
     display:flex; flex-direction:column; align-items:center; justify-content:center;
     gap:1px; line-height:1.1;
   }
-  .date-nav button .nav-arrow { font-size:20px; line-height:1; }
+  .date-nav > button .nav-arrow { font-size:20px; line-height:1; }
   .nav-step { font-size:10px; font-weight:600; line-height:1.15; }
-  /* The real <input type="date"> is kept in the DOM (so the existing change
-     handler, min/max, disabled state, etc. all keep working unchanged) but is
-     stretched transparently over the visible .date-display label. Tapping
-     anywhere on the label taps the real input directly, which is the most
-     reliable way to open the native date picker across browsers, including
-     iOS Safari (no synthetic click()/showPicker() call needed). */
+  /* The real <input type="date"> retains the date value, min/max, and change
+     handling. The visible date button explicitly opens its native picker so
+     desktop browsers do not depend on clicks landing on a hidden input. */
   .date-display-wrap {
     position:relative; min-width:0; align-self:stretch;
-    display:flex; align-items:center; justify-content:center;
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
   }
   .date-display {
-    font-size:20px; font-weight:800; color:var(--text); white-space:nowrap;
-    pointer-events:none; text-align:center; width:100%;
+    appearance:none; border:0; background:transparent; padding:0;
+    font:inherit; font-size:20px; font-weight:800; color:var(--text); white-space:nowrap;
+    cursor:pointer; text-align:center; width:100%; height:100%;
   }
   .date-nav input[type="date"] {
     position:absolute; inset:0; width:100%; height:100%; margin:0; padding:0; border:0;
-    opacity:0; cursor:pointer; -webkit-appearance:none; appearance:none;
+    opacity:0; pointer-events:none; -webkit-appearance:none; appearance:none;
   }
   button {
     appearance:none; border:1px solid var(--border); background:var(--button-bg); color:var(--button-text);
@@ -245,14 +243,14 @@
     .range-row { width:100%; justify-content:space-between; }
     #selectedHeight { font-size:22px; }
     .date-nav { grid-template-columns:52px 52px 180px 52px 52px; gap:6px; }
-    .date-nav button { min-width:52px; }
-    .date-nav button .nav-arrow { font-size:18px; }
+    .date-nav > button { min-width:52px; }
+    .date-nav > button .nav-arrow { font-size:18px; }
   }
   @media (max-width: 560px) {
     h1 { font-size:26px; white-space:nowrap; }
     .date-nav { grid-template-columns:44px 44px minmax(0,1fr) 44px 44px; gap:4px; width:100%; }
-    .date-nav button { min-width:0; width:44px; padding:8px 2px; }
-    .date-nav button .nav-step { font-size:9px; }
+    .date-nav > button { min-width:0; width:44px; padding:8px 2px; }
+    .date-nav > button .nav-step { font-size:9px; }
     .date-display { font-size:18px; }
     .range-row { gap:6px; }
     .range-row .btns { gap:4px; }
@@ -290,8 +288,8 @@
           <button id="btnPrev7" type="button" aria-label="1週間前"><span class="nav-step">1週間</span><span class="nav-arrow">&lt;&lt;</span></button>
           <button id="btnPrev1" type="button" aria-label="1日前"><span class="nav-step">1日</span><span class="nav-arrow">&lt;</span></button>
           <div class="date-display-wrap">
-            <div id="dateDisplay" class="date-display" aria-hidden="true">-</div>
-            <input id="dateInput" type="date" disabled>
+            <button id="datePickerButton" class="date-display" type="button" aria-label="日付を選択" disabled>-</button>
+            <input id="dateInput" type="date" disabled tabindex="-1" aria-hidden="true">
           </div>
           <button id="btnNext1" type="button" aria-label="1日後"><span class="nav-step">1日</span><span class="nav-arrow">&gt;</span></button>
           <button id="btnNext7" type="button" aria-label="1週間後"><span class="nav-step">1週間</span><span class="nav-arrow">&gt;&gt;</span></button>
@@ -402,7 +400,7 @@ let dataMap = {};
 const chart = document.getElementById('chart');
 const ctx = chart.getContext('2d');
 const nowPulseEl = document.getElementById('nowPulse');
-const dateDisplayEl = document.getElementById('dateDisplay');
+const datePickerButton = document.getElementById('datePickerButton');
 const dateInput = document.getElementById('dateInput');
 const btn1 = document.getElementById('btn1');
 const btn2 = document.getElementById('btn2');
@@ -568,6 +566,7 @@ async function initializeData() {
   dateInput.min = firstDate;
   dateInput.max = lastDate;
   dateInput.disabled = false;
+  datePickerButton.disabled = false;
   const defaultState = setDefaultDate();
   const rangeMessage = `収録範囲：${jpDate(firstDate)}〜${jpDate(lastDate)}（気象庁・日立）`;
   if (defaultState === 'today') {
@@ -604,7 +603,23 @@ function addDays(dateStr, add) {
 // date only, even in 2-day view (the second day isn't shown here).
 function updateDateDisplay() {
   if (!dateInput.value) return;
-  dateDisplayEl.textContent = jpDate(dateInput.value);
+  datePickerButton.textContent = jpDate(dateInput.value);
+}
+
+function openDatePicker() {
+  if (dateInput.disabled) return;
+  if (typeof dateInput.showPicker === 'function') {
+    try {
+      // The handler runs in a genuine user-click event, which is required by
+      // desktop Chromium before it permits the native picker to open.
+      dateInput.showPicker();
+      return;
+    } catch {
+      // Fall through to the native click fallback below.
+    }
+  }
+  dateInput.focus({ preventScroll: true });
+  dateInput.click();
 }
 
 function setDefaultDate() {
@@ -1290,6 +1305,7 @@ riverStationSelect.addEventListener('change', () => {
 });
 
 dateInput.addEventListener('change', refresh);
+datePickerButton.addEventListener('click', openDatePicker);
 
 chart.addEventListener('click', (e) => {
   const p = nearestPointFromClient(e.clientX);
@@ -1324,6 +1340,7 @@ restoreRiverStationSelection();
 initializeData().then(syncNowMarkerEffects).catch(error => {
   console.error(error);
   dateInput.disabled = true;
+  datePickerButton.disabled = true;
   setDataStatus(`潮位データを読み込めませんでした：${error.message}`, 'error');
 });
 </script>
