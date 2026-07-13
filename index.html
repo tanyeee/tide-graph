@@ -97,6 +97,7 @@
   }
   .toggle button.active { background:var(--accent); color:#fff; }
   .range-row { display:flex; flex-wrap:wrap; align-items:end; gap:12px; margin-top:16px; margin-bottom:18px; }
+  .range-row .field > label { text-align:center; }
   /* flex-basis:0 (not a fixed px value) lets this field shrink down to
      whatever room is left after the 表示範囲 buttons and 更新 button take
      their space, instead of forcing its own line. min-width:0 is required
@@ -117,7 +118,6 @@
   .refresh-wrap { margin-left:auto; }
   .refresh-btn { min-width:64px; height:44px; border-radius:14px; font-size:22px; font-weight:700; padding:0 14px; }
   .date-nav-field { width:min(100%, 520px); }
-  .date-nav-label-main { display:block; font-size:16px; }
   .date-nav { display:grid; grid-template-columns:56px 56px 220px 56px 56px; align-items:center; gap:8px; justify-content:start; }
   /* Nav buttons (date-nav and seekbar) show a small step-size label above the
      arrow glyph, stacked via flex-column, so the arrow's own font-size lives
@@ -154,10 +154,11 @@
   .meta {
     display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin-bottom:14px;
   }
+  .meta-field { display:flex; flex-direction:column; gap:6px; min-width:0; }
+  .meta-label { color:var(--muted); font-size:14px; text-align:center; }
   .pill {
     background:var(--pill); border:1px solid var(--border); border-radius:14px; padding:12px 14px;
   }
-  .pill .k { color:var(--muted); font-size:12px; margin-bottom:4px; }
   .pill .v { font-size:18px; font-weight:700; text-align:center; }
   #selectedHeight {
     color:var(--highlight);
@@ -304,7 +305,7 @@
 
     <div class="controls">
       <div class="field date-nav-field">
-        <label for="dateInput"><span class="date-nav-label-main">表示日</span>日付をクリックまたはタップするとカレンダーから変更可能</label>
+        <label for="dateInput">日付をクリックまたはタップするとカレンダーから変更可能</label>
         <div class="date-nav">
           <button id="btnPrev7" type="button" aria-label="1週間前"><span class="nav-step">1週間</span><span class="nav-arrow">&lt;&lt;</span></button>
           <button id="btnPrev1" type="button" aria-label="1日前"><span class="nav-step">1日</span><span class="nav-arrow">&lt;</span></button>
@@ -328,9 +329,9 @@
     </div>
 
     <div class="meta">
-      <div class="pill"><div class="k">選択時刻</div><div class="v" id="selectedTime">-</div></div>
-      <div class="pill"><div class="k">海洋潮位</div><div class="v" id="selectedHeight">-</div></div>
-      <div class="pill"><div class="k">河川水位 <sup class="footnote-mark" id="riverFootnoteMark">※1</sup></div><div class="v" id="selectedRiverHeight">-</div></div>
+      <div class="meta-field"><div class="meta-label">選択時刻</div><div class="pill"><div class="v" id="selectedTime">-</div></div></div>
+      <div class="meta-field"><div class="meta-label">海洋潮位</div><div class="pill"><div class="v" id="selectedHeight">-</div></div></div>
+      <div class="meta-field"><div class="meta-label">河川水位 <sup class="footnote-mark" id="riverFootnoteMark">※1</sup></div><div class="pill"><div class="v" id="selectedRiverHeight">-</div></div></div>
     </div>
 
     <div class="seekbar">
