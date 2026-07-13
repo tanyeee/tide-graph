@@ -772,10 +772,25 @@ function roundedRectPath(x, y, width, height, radius) {
 // Draw compact callouts directly beside each high/low tide. Keeping the
 // time and height adjacent to the point makes the chart self-contained and
 // removes the need for separate high/low lists below it.
-function drawExtremaLabels(xFromMinute, yFromHeight, m, plotW, plotH) {
+function riverYAtMinute(minute, yFromRiverLevel) {
+  if (!currentRiverAxis || !currentRiverSeries.length) return null;
+  const afterIndex = currentRiverSeries.findIndex(point => point.minute >= minute);
+  if (afterIndex === -1) return null;
+  const after = currentRiverSeries[afterIndex];
+  if (after.minute === minute) return yFromRiverLevel(after.level);
+  if (afterIndex === 0) return null;
+  const before = currentRiverSeries[afterIndex - 1];
+  // Do not invent a line across a gap in the ten-minute observation feed.
+  if (after.minute - before.minute > 20) return null;
+  const ratio = (minute - before.minute) / (after.minute - before.minute);
+  return yFromRiverLevel(before.level + (after.level - before.level) * ratio);
+}
+
+function drawExtremaLabels(xFromMinute, yFromHeight, yFromRiverLevel, m, plotW) {
   const boxW = 116;
   const boxH = 66;
   const pointerH = 9;
+  const lineGap = 1;
   const inset = 4;
   ctx.save();
   ctx.lineWidth = 1.5;
@@ -788,10 +803,19 @@ function drawExtremaLabels(xFromMinute, yFromHeight, m, plotW, plotH) {
     const pointY = yFromHeight(item.height);
     const isHigh = item.kind === 'high';
     const boxX = Math.max(m.left + inset, Math.min(pointX - boxW / 2, m.left + plotW - boxW - inset));
-    const preferredY = isHigh ? pointY - pointerH - boxH : pointY + pointerH;
-    const boxY = Math.max(m.top + inset, Math.min(preferredY, m.top + plotH - boxH - inset));
+    const riverY = riverYAtMinute(item.minute, yFromRiverLevel);
+    // The pointer stops one pixel before the first waveform encountered in
+    // its direction. For a high tide that is the uppermost line; for a low
+    // tide it is the lowermost line. This keeps the label close while never
+    // covering either the astronomical or river-water trace.
+    const nearestLineY = riverY == null
+      ? pointY
+      : (isHigh ? Math.min(pointY, riverY) : Math.max(pointY, riverY));
+    const pointerTipY = isHigh ? nearestLineY - lineGap : nearestLineY + lineGap;
+    const boxY = isHigh
+      ? pointerTipY - pointerH - boxH
+      : pointerTipY + pointerH;
     const pointerBaseY = isHigh ? boxY + boxH : boxY;
-    const pointerTipY = isHigh ? Math.min(pointY, pointerBaseY + pointerH) : Math.max(pointY, pointerBaseY - pointerH);
     const pointerHalf = 6;
 
     // A muted blue, only slightly darker than --chart-bg, retains contrast
@@ -1048,7 +1072,15 @@ function drawChart() {
   // similarly widened only in 実水位 (actual) mode, which draws its own
   // right-side axis labels (m単位); 相対 mode keeps right:20 and draws no
   // right-axis labels, exactly as before.
-  const m = {left: 80, right: isActualMode ? 90 : 20, top: SUN_MOON_BANDS_H + 4, bottom: 76};
+  const m = {
+    left: 80,
+    right: isActualMode ? 90 : 20,
+    // Keep a deliberate 5px gap between the sun/moon bars and the plot.
+    top: SUN_MOON_BANDS_H + 5,
+    // X-axis labels start immediately below the plot and retain a 5px
+    // breathing room to the canvas edge.
+    bottom: 28 + 5
+  };
   const plotW = W - m.left - m.right;
   const plotH = H - m.top - m.bottom;
 
@@ -1175,7 +1207,7 @@ function drawChart() {
     ctx.font = '28px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
-    ctx.fillText(label, x, H - m.bottom + 12);
+    ctx.fillText(label, x, H - m.bottom);
   }
 
   updateDateDisplay();
@@ -1217,7 +1249,7 @@ function drawChart() {
     ctx.restore();
   }
 
-  drawExtremaLabels(xFromMinute, yFromHeight, m, plotW, plotH);
+  drawExtremaLabels(xFromMinute, yFromHeight, yFromRiverLevel, m, plotW);
 
   // The current-time indicator is now drawn as a solid dot with an animated
   // pulse ring (drawNowIndicator / #nowPulse) instead of this vertical
