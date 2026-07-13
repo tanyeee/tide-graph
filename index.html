@@ -139,7 +139,7 @@
   button.active { background:var(--accent); color:#fff; border-color:var(--accent); }
   button:disabled { opacity:.45; cursor:not-allowed; }
   .meta {
-    display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin-bottom:14px;
+    display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin-bottom:14px;
   }
   .pill {
     background:var(--pill); border:1px solid var(--border); border-radius:14px; padding:12px 14px;
@@ -151,6 +151,8 @@
     font-size:24px;
     font-weight:800;
   }
+  #selectedRiverHeight { color:var(--river); }
+  .footnote-mark { font-size:.72em; vertical-align:super; line-height:0; }
   .swatch { display:inline-block; width:1.4em; height:.22em; margin:0 .35em .18em 0; vertical-align:middle; border-radius:999px; }
   .swatch.tide { background:var(--highlight); }
   .swatch.river { background:var(--river); }
@@ -239,7 +241,7 @@
        not be clipped by the container) even with the container's radius
        reset above, leaving visible rounding at the now-flush edges. */
     #chart { border-radius:0; }
-    .meta { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .meta { grid-template-columns:repeat(3,minmax(0,1fr)); }
     .range-row { width:100%; justify-content:space-between; }
     #selectedHeight { font-size:22px; }
     .date-nav { grid-template-columns:52px 52px 180px 52px 52px; gap:6px; }
@@ -258,7 +260,7 @@
     .refresh-btn { min-width:44px; width:44px; padding:0 8px; }
     .river-field label { font-size:12px; }
     .river-field select { padding:10px 8px; font-size:16px; }
-    .meta { gap:8px; }
+    .meta { grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
     .pill { min-width:0; padding:10px; }
     .pill .v { font-size:16px; white-space:nowrap; }
     #selectedHeight { font-size:20px; }
@@ -308,7 +310,8 @@
 
     <div class="meta">
       <div class="pill"><div class="k">選択時刻</div><div class="v" id="selectedTime">-</div></div>
-      <div class="pill"><div class="k">天文潮位</div><div class="v" id="selectedHeight">-</div></div>
+      <div class="pill"><div class="k">海洋潮位</div><div class="v" id="selectedHeight">-</div></div>
+      <div class="pill"><div class="k">河川水位 <sup class="footnote-mark">※1</sup></div><div class="v" id="selectedRiverHeight">-</div></div>
     </div>
 
     <div class="seekbar">
@@ -368,6 +371,7 @@
     <div class="legend">
       <span class="swatch tide"></span>左軸：天文潮位（m）　<span class="swatch river"></span>河川水位（縦スケール自動調整）　横軸：時刻（JST）。河川水位は表示中の両波形の5〜95パーセンタイルが縦方向に合うよう自動調整します。時刻は移動していません。両軸は基準面が異なるため、絶対的な高さの比較には使用できません。<br>
       潮位の10分値は気象庁の毎時潮位から直線補間した天文潮位で、潮名は月齢に基づく目安です。出典：<a href="https://www.data.jma.go.jp/kaiyou/db/tide/suisan/suisan.php?stn=D1" target="_blank" rel="noopener noreferrer">気象庁「潮位表 日立」</a>、<a href="https://tanyeee.github.io/kuji-waterlevel/" target="_blank" rel="noopener noreferrer">国土交通省データを利用した久慈川水位ビューア</a>
+      <br>※1 河川水位は、潮位との時刻差を比較しやすくするためグラフ上で縦方向に自動調整した表示値です。実際の河川水位を示すものではありません。
     </div>
   </div>
 </div>
@@ -382,6 +386,7 @@ import {
 import {
   RIVER_STATIONS,
   calculateRiverAxis,
+  riverLevelToDisplayHeight,
   normalizeRiverPayload,
   pairRiverWithTide,
   riverSeriesForWindow
@@ -418,6 +423,7 @@ const riverStationSelect = document.getElementById('riverStation');
 const tideNameEl = document.getElementById('tideName');
 const selectedTimeEl = document.getElementById('selectedTime');
 const selectedHeightEl = document.getElementById('selectedHeight');
+const selectedRiverHeightEl = document.getElementById('selectedRiverHeight');
 const highList = document.getElementById('highList');
 const lowList = document.getElementById('lowList');
 const dataStatusEl = document.getElementById('dataStatus');
@@ -1181,8 +1187,14 @@ function drawSelection(point, updateMeta = true) {
   drawNowIndicator();
 
   if (updateMeta) {
-    selectedTimeEl.textContent = point.label.replace(/-/g, '/');
-    selectedHeightEl.textContent = `${point.height.toFixed(1)} cm`;
+    selectedTimeEl.textContent = point.label.slice(-5);
+    selectedHeightEl.textContent = `${Math.round(point.height)} cm`;
+    const displayRiverHeight = riverPoint && currentRiverAxis
+      ? riverLevelToDisplayHeight(riverPoint.level, currentRiverAxis, { min: plot.yMin, max: plot.yMax })
+      : null;
+    selectedRiverHeightEl.textContent = Number.isFinite(displayRiverHeight)
+      ? `${Math.round(displayRiverHeight)} cm`
+      : '—';
   }
 }
 

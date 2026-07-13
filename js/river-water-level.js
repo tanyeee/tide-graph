@@ -189,6 +189,18 @@ export function calculateRiverAxis(tideValues, riverValues, tideAxis) {
   return { min, max };
 }
 
+// Converts a raw river-level reading to the apparent height used to draw it
+// on the tide chart. This is deliberately not the observed river elevation:
+// calculateRiverAxis() scales the river series vertically to make timing
+// differences between its peaks/troughs and the sea tide easier to compare.
+export function riverLevelToDisplayHeight(riverLevel, riverAxis, tideAxis) {
+  if (!Number.isFinite(riverLevel) || !riverAxis || !tideAxis) return null;
+  const riverSpan = riverAxis.max - riverAxis.min;
+  const tideSpan = tideAxis.max - tideAxis.min;
+  if (!(riverSpan > 0) || !(tideSpan > 0)) return null;
+  return tideAxis.min + ((riverLevel - riverAxis.min) / riverSpan) * tideSpan;
+}
+
 export function axisTicks(min, max, targetCount = 5) {
   const span = max - min;
   if (!(span > 0)) return [];

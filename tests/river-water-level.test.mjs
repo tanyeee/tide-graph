@@ -6,6 +6,7 @@ import {
   normalizeRiverPayload,
   pairRiverWithTide,
   percentile,
+  riverLevelToDisplayHeight,
   riverSeriesForWindow,
   timestampToWindowMinute
 } from '../js/river-water-level.js';
@@ -44,6 +45,12 @@ test('fits river percentiles onto the tide axis without shifting time', () => {
   assert.ok(axis);
   const mapY = value => (axis.max - value) / (axis.max - axis.min);
   assert.ok(Math.abs(mapY(3) - 0.5) < 1e-9);
+});
+
+test('converts a river reading to the apparent chart height, not its raw elevation', () => {
+  const displayed = riverLevelToDisplayHeight(3, { min: 1, max: 5 }, { min: 0, max: 100 });
+  assert.equal(displayed, 50);
+  assert.equal(riverLevelToDisplayHeight(3, null, { min: 0, max: 100 }), null);
 });
 
 test('supports negative river levels and stable constant series', () => {
