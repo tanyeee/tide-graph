@@ -84,6 +84,18 @@
   }
   select { min-width:150px; height:44px; }
   .btns { display:flex; gap:8px; flex-wrap:wrap; }
+  /* Binary settings are rendered as one connected control, not two
+     independent action buttons, so the selected state reads as a toggle. */
+  .toggle {
+    display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:3px;
+    min-width:116px; padding:3px; border:1px solid var(--border);
+    border-radius:999px; background:var(--pill);
+  }
+  .toggle button {
+    border:0; background:transparent; color:var(--muted); box-shadow:none;
+    padding:8px 10px; border-radius:999px; font-weight:700;
+  }
+  .toggle button.active { background:var(--accent); color:#fff; }
   .range-row { display:flex; flex-wrap:wrap; align-items:end; gap:12px; margin-top:16px; margin-bottom:18px; }
   /* flex-basis:0 (not a fixed px value) lets this field shrink down to
      whatever room is left after the 表示範囲 buttons and 更新 button take
@@ -261,6 +273,8 @@
     }
     .range-row .btns { gap:4px; }
     .range-row button { padding:9px 5px; white-space:nowrap; font-size:14px; }
+    .range-row .toggle { min-width:0; gap:2px; padding:2px; }
+    .range-row .toggle button { padding:8px 4px; }
     .range-row .field { min-width:0; }
     .refresh-btn { min-width:44px; width:44px; padding:0 8px; }
     .river-mode-field { order:1; }
@@ -329,10 +343,10 @@
 
     <div class="range-row">
       <div class="field">
-        <label>表示範囲</label>
-        <div class="btns">
-          <button id="btn1" class="active" type="button">1日</button>
-          <button id="btn2" type="button">2日</button>
+        <label>表示日数</label>
+        <div class="toggle" role="group" aria-label="表示日数">
+          <button id="btn1" class="active" type="button" aria-pressed="true">1日</button>
+          <button id="btn2" type="button" aria-pressed="false">2日</button>
         </div>
       </div>
       <div class="field river-field">
@@ -352,10 +366,10 @@
         </select>
       </div>
       <div class="field river-mode-field">
-        <label>表示モード</label>
-        <div class="btns">
-          <button id="riverModeRelative" class="active" type="button">相対</button>
-          <button id="riverModeActual" type="button">実水位</button>
+        <label>水位モード</label>
+        <div class="toggle" role="group" aria-label="水位モード">
+          <button id="riverModeRelative" class="active" type="button" aria-pressed="true">相対</button>
+          <button id="riverModeActual" type="button" aria-pressed="false">実水位</button>
         </div>
       </div>
       <div class="field refresh-wrap">
@@ -487,6 +501,8 @@ function updateRiverModeUI() {
   const isActual = riverDisplayMode === 'actual';
   riverModeRelativeBtn.classList.toggle('active', !isActual);
   riverModeActualBtn.classList.toggle('active', isActual);
+  riverModeRelativeBtn.setAttribute('aria-pressed', String(!isActual));
+  riverModeActualBtn.setAttribute('aria-pressed', String(isActual));
   riverFootnoteMarkEl.style.display = isActual ? 'none' : '';
   riverFootnoteTextEl.style.display = isActual ? 'none' : '';
   riverLegendLabelEl.textContent = isActual ? '河川水位（実測）' : '河川水位（縦スケール自動調整）';
@@ -1460,6 +1476,8 @@ function refresh(resetSelection = true) {
     dayCount = 1;
     btn1.classList.add('active');
     btn2.classList.remove('active');
+    btn1.setAttribute('aria-pressed', 'true');
+    btn2.setAttribute('aria-pressed', 'false');
   }
 
   currentSeries = buildSeries(dateStr, dayCount);
@@ -1484,6 +1502,8 @@ btn1.addEventListener('click', () => {
   dayCount = 1;
   btn1.classList.add('active');
   btn2.classList.remove('active');
+  btn1.setAttribute('aria-pressed', 'true');
+  btn2.setAttribute('aria-pressed', 'false');
   refresh();
 });
 
@@ -1492,6 +1512,8 @@ btn2.addEventListener('click', () => {
   dayCount = 2;
   btn2.classList.add('active');
   btn1.classList.remove('active');
+  btn1.setAttribute('aria-pressed', 'false');
+  btn2.setAttribute('aria-pressed', 'true');
   refresh();
 });
 
