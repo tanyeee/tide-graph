@@ -1079,8 +1079,8 @@ function drawChart() {
     right: isActualMode ? 90 : 20,
     // Keep a deliberate 30px gap between the sun/moon bars and the plot.
     top: SUN_MOON_BANDS_H + 30,
-    // Leave 1px from the plot to the labels, then 30px below the labels.
-    bottom: 1 + 28 + 30
+    // Leave 5px from the plot to the labels, then 50px below the labels.
+    bottom: 5 + 28 + 50
   };
   const plotW = W - m.left - m.right;
   const plotH = H - m.top - m.bottom;
@@ -1208,7 +1208,7 @@ function drawChart() {
     ctx.font = '28px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
-    ctx.fillText(label, x, H - m.bottom + 1);
+    ctx.fillText(label, x, H - m.bottom + 5);
   }
 
   updateDateDisplay();
