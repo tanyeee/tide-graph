@@ -772,12 +772,17 @@ function drawExtremaLabels(xFromMinute, yFromHeight, yFromRiverLevel, m, plotW, 
   const boxW = 116;
   const boxH = 66;
   const closePointerH = 9;
-  const movedPointerHeights = [30, 50, 70, 90];
+  const actualMode = isActualRiverMode();
+  // Actual water levels can run substantially away from the tide curve.
+  // Start their flipped labels farther from the extremum and keep trying
+  // farther positions so the independent right-axis line is also cleared.
+  const movedPointerHeights = actualMode
+    ? [50, 70, 90, 120, 160, 200]
+    : [30, 50, 70, 90];
   const inset = 4;
   const plotBottom = m.top + plotH;
 
-  function lineOverlapsBox(series, yForPoint, boxX, boxY) {
-    const padding = 5;
+  function lineOverlapsBox(series, yForPoint, boxX, boxY, padding) {
     const left = boxX - padding;
     const right = boxX + boxW + padding;
     const top = boxY - padding;
@@ -805,8 +810,13 @@ function drawExtremaLabels(xFromMinute, yFromHeight, yFromRiverLevel, m, plotW, 
     const boxX = Math.max(m.left + inset, Math.min(pointX - boxW / 2, m.left + plotW - boxW - inset));
     const boxY = placeAbove ? pointY - pointerH - boxH : pointY + pointerH;
     if (boxY < m.top + inset || boxY + boxH > plotBottom - inset) return null;
-    const overlapsTide = lineOverlapsBox(currentSeries, point => yFromHeight(point.height), boxX, boxY);
-    const overlapsRiver = currentRiverAxis && lineOverlapsBox(currentRiverSeries, point => yFromRiverLevel(point.level), boxX, boxY);
+    const overlapsTide = lineOverlapsBox(currentSeries, point => yFromHeight(point.height), boxX, boxY, 7);
+    // The actual-water-level line is visually prominent and uses an
+    // independent scale, so reserve a larger safety margin for it.
+    const riverPadding = actualMode ? 24 : 7;
+    const overlapsRiver = currentRiverAxis && lineOverlapsBox(
+      currentRiverSeries, point => yFromRiverLevel(point.level), boxX, boxY, riverPadding
+    );
     return { boxX, boxY, placeAbove, pointerH, overlaps: overlapsTide || overlapsRiver };
   }
 
