@@ -769,13 +769,13 @@ function roundedRectPath(x, y, width, height, radius) {
 // time and height adjacent to the point makes the chart self-contained and
 // removes the need for separate high/low lists below it.
 function drawExtremaLabels(xFromMinute, yFromHeight, m, plotW, plotH) {
-  const boxW = 88;
-  const boxH = 42;
-  const pointerH = 8;
+  const boxW = 116;
+  const boxH = 66;
+  const pointerH = 9;
   const inset = 4;
   ctx.save();
   ctx.lineWidth = 1.5;
-  ctx.font = 'bold 16px sans-serif';
+  ctx.font = 'bold 27px sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
 
@@ -790,8 +790,10 @@ function drawExtremaLabels(xFromMinute, yFromHeight, m, plotW, plotH) {
     const pointerTipY = isHigh ? Math.min(pointY, pointerBaseY + pointerH) : Math.max(pointY, pointerBaseY - pointerH);
     const pointerHalf = 6;
 
-    ctx.fillStyle = 'rgba(15, 23, 42, .88)';
-    ctx.strokeStyle = 'rgba(255, 255, 255, .88)';
+    // A muted blue, only slightly darker than --chart-bg, retains contrast
+    // without making the labels look like heavy dark panels.
+    ctx.fillStyle = 'rgba(20, 68, 98, .9)';
+    ctx.strokeStyle = 'rgba(255, 255, 255, .78)';
     ctx.beginPath();
     roundedRectPath(boxX, boxY, boxW, boxH, 7);
     ctx.fill();
@@ -805,10 +807,10 @@ function drawExtremaLabels(xFromMinute, yFromHeight, m, plotW, plotH) {
     ctx.stroke();
 
     ctx.fillStyle = '#fff';
-    ctx.fillText(item.time, boxX + boxW / 2, boxY + 13);
-    ctx.font = 'bold 15px sans-serif';
-    ctx.fillText(`${Math.round(item.height)} cm`, boxX + boxW / 2, boxY + 29);
-    ctx.font = 'bold 16px sans-serif';
+    ctx.fillText(item.time, boxX + boxW / 2, boxY + 21);
+    ctx.font = 'bold 23px sans-serif';
+    ctx.fillText(`${Math.round(item.height)} cm`, boxX + boxW / 2, boxY + 49);
+    ctx.font = 'bold 27px sans-serif';
   });
   ctx.restore();
 }
