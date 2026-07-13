@@ -773,12 +773,13 @@ function drawExtremaLabels(xFromMinute, yFromHeight, yFromRiverLevel, m, plotW, 
   const boxH = 66;
   const closePointerH = 9;
   const actualMode = isActualRiverMode();
-  // Actual water levels can run substantially away from the tide curve.
-  // Start their flipped labels farther from the extremum and keep trying
-  // farther positions so the independent right-axis line is also cleared.
+  // Actual-water-level mode has an independently scaled river line. Search
+  // a compact set of vertical and horizontal offsets rather than sending a
+  // label far away on one long vertical connector.
   const movedPointerHeights = actualMode
-    ? [50, 70, 90, 120, 160, 200]
+    ? [40, 60, 80, 100, 120, 140]
     : [30, 50, 70, 90];
+  const movedHorizontalOffsets = [0, -36, 36, -72, 72, -108, 108];
   const inset = 4;
   const plotBottom = m.top + plotH;
 
@@ -806,8 +807,9 @@ function drawExtremaLabels(xFromMinute, yFromHeight, yFromRiverLevel, m, plotW, 
     return false;
   }
 
-  function calloutCandidate(pointX, pointY, placeAbove, pointerH) {
-    const boxX = Math.max(m.left + inset, Math.min(pointX - boxW / 2, m.left + plotW - boxW - inset));
+  function calloutCandidate(pointX, pointY, placeAbove, pointerH, horizontalOffset = 0) {
+    const desiredCenterX = pointX + horizontalOffset;
+    const boxX = Math.max(m.left + inset, Math.min(desiredCenterX - boxW / 2, m.left + plotW - boxW - inset));
     const boxY = placeAbove ? pointY - pointerH - boxH : pointY + pointerH;
     if (boxY < m.top + inset || boxY + boxH > plotBottom - inset) return null;
     const overlapsTide = lineOverlapsBox(currentSeries, point => yFromHeight(point.height), boxX, boxY, 7);
@@ -817,7 +819,11 @@ function drawExtremaLabels(xFromMinute, yFromHeight, yFromRiverLevel, m, plotW, 
     const overlapsRiver = currentRiverAxis && lineOverlapsBox(
       currentRiverSeries, point => yFromRiverLevel(point.level), boxX, boxY, riverPadding
     );
-    return { boxX, boxY, placeAbove, pointerH, overlaps: overlapsTide || overlapsRiver };
+    return {
+      boxX, boxY, placeAbove, pointerH,
+      overlaps: overlapsTide || overlapsRiver,
+      distance: pointerH + Math.abs(horizontalOffset) * 0.45
+    };
   }
 
   ctx.save();
@@ -831,13 +837,17 @@ function drawExtremaLabels(xFromMinute, yFromHeight, yFromRiverLevel, m, plotW, 
     const pointY = yFromHeight(item.height);
     const isHigh = item.kind === 'high';
     // High tides prefer a label above and lows a label below. If that box
-    // would leave the plot or cover either waveform, flip it to the other
-    // side with a longer pointer so the label clears the curve.
+    // would leave the plot or cover either waveform, flip it and choose the
+    // nearest clear candidate, allowing a modest horizontal offset first.
     const preferred = calloutCandidate(pointX, pointY, isHigh, closePointerH);
-    const flippedCandidates = movedPointerHeights
-      .map(pointerH => calloutCandidate(pointX, pointY, !isHigh, pointerH))
-      .filter(Boolean);
-    const clearFlipped = flippedCandidates.find(candidate => !candidate.overlaps);
+    const flippedCandidates = movedPointerHeights.flatMap(pointerH =>
+      movedHorizontalOffsets.map(offsetX =>
+        calloutCandidate(pointX, pointY, !isHigh, pointerH, offsetX)
+      )
+    ).filter(Boolean);
+    const clearFlipped = flippedCandidates
+      .filter(candidate => !candidate.overlaps)
+      .sort((a, b) => a.distance - b.distance)[0];
     const candidate = preferred && !preferred.overlaps
       ? preferred
       : clearFlipped || preferred || flippedCandidates[0];
