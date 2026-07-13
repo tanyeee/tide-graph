@@ -84,7 +84,11 @@
   }
   select { min-width:150px; height:44px; }
   .btns { display:flex; gap:8px; flex-wrap:wrap; }
+  .toggle { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:3px; min-width:116px; padding:3px; border:1px solid var(--border); border-radius:999px; background:var(--pill); }
+  .toggle button { border:0; background:transparent; color:var(--muted); padding:8px 10px; border-radius:999px; font-weight:700; }
+  .toggle button.active { background:var(--accent); color:#fff; }
   .range-row { display:flex; flex-wrap:wrap; align-items:end; gap:12px; margin-top:16px; margin-bottom:18px; }
+  .range-row .field > label, .pill .k { text-align:center; }
   /* flex-basis:0 (not a fixed px value) lets this field shrink down to
      whatever room is left after the 表示範囲 buttons and 更新 button take
      their space, instead of forcing its own line. min-width:0 is required
@@ -105,7 +109,6 @@
   .refresh-wrap { margin-left:auto; }
   .refresh-btn { min-width:64px; height:44px; border-radius:14px; font-size:22px; font-weight:700; padding:0 14px; }
   .date-nav-field { width:min(100%, 520px); }
-  .date-nav-label-main { display:block; font-size:16px; }
   .date-nav { display:grid; grid-template-columns:56px 56px 220px 56px 56px; align-items:center; gap:8px; justify-content:start; }
   /* Nav buttons (date-nav and seekbar) show a small step-size label above the
      arrow glyph, stacked via flex-column, so the arrow's own font-size lives
@@ -261,6 +264,8 @@
     }
     .range-row .btns { gap:4px; }
     .range-row button { padding:9px 5px; white-space:nowrap; font-size:14px; }
+    .range-row .toggle { min-width:0; gap:2px; padding:2px; }
+    .range-row .toggle button { padding:8px 4px; }
     .range-row .field { min-width:0; }
     .refresh-btn { min-width:44px; width:44px; padding:0 8px; }
     .river-mode-field { order:1; }
@@ -290,7 +295,7 @@
 
     <div class="controls">
       <div class="field date-nav-field">
-        <label for="dateInput"><span class="date-nav-label-main">表示日</span>日付をクリックまたはタップするとカレンダーから変更可能</label>
+        <label for="dateInput">日付をクリックまたはタップするとカレンダーから変更可能</label>
         <div class="date-nav">
           <button id="btnPrev7" type="button" aria-label="1週間前"><span class="nav-step">1週間</span><span class="nav-arrow">&lt;&lt;</span></button>
           <button id="btnPrev1" type="button" aria-label="1日前"><span class="nav-step">1日</span><span class="nav-arrow">&lt;</span></button>
@@ -329,8 +334,8 @@
 
     <div class="range-row">
       <div class="field">
-        <label>表示範囲</label>
-        <div class="btns">
+        <label>表示日数</label>
+        <div class="toggle" role="group" aria-label="表示日数">
           <button id="btn1" class="active" type="button">1日</button>
           <button id="btn2" type="button">2日</button>
         </div>
@@ -352,8 +357,8 @@
         </select>
       </div>
       <div class="field river-mode-field">
-        <label>表示モード</label>
-        <div class="btns">
+        <label>水位モード</label>
+        <div class="toggle" role="group" aria-label="水位モード">
           <button id="riverModeRelative" class="active" type="button">相対</button>
           <button id="riverModeActual" type="button">実水位</button>
         </div>
