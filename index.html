@@ -84,20 +84,7 @@
   }
   select { min-width:150px; height:44px; }
   .btns { display:flex; gap:8px; flex-wrap:wrap; }
-  /* Binary settings are rendered as one connected control, not two
-     independent action buttons, so the selected state reads as a toggle. */
-  .toggle {
-    display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:3px;
-    min-width:116px; padding:3px; border:1px solid var(--border);
-    border-radius:999px; background:var(--pill);
-  }
-  .toggle button {
-    border:0; background:transparent; color:var(--muted); box-shadow:none;
-    padding:8px 10px; border-radius:999px; font-weight:700;
-  }
-  .toggle button.active { background:var(--accent); color:#fff; }
   .range-row { display:flex; flex-wrap:wrap; align-items:end; gap:12px; margin-top:16px; margin-bottom:18px; }
-  .range-row .field > label { text-align:center; }
   /* flex-basis:0 (not a fixed px value) lets this field shrink down to
      whatever room is left after the 表示範囲 buttons and 更新 button take
      their space, instead of forcing its own line. min-width:0 is required
@@ -118,6 +105,7 @@
   .refresh-wrap { margin-left:auto; }
   .refresh-btn { min-width:64px; height:44px; border-radius:14px; font-size:22px; font-weight:700; padding:0 14px; }
   .date-nav-field { width:min(100%, 520px); }
+  .date-nav-label-main { display:block; font-size:16px; }
   .date-nav { display:grid; grid-template-columns:56px 56px 220px 56px 56px; align-items:center; gap:8px; justify-content:start; }
   /* Nav buttons (date-nav and seekbar) show a small step-size label above the
      arrow glyph, stacked via flex-column, so the arrow's own font-size lives
@@ -154,12 +142,10 @@
   .meta {
     display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin-bottom:14px;
   }
-  .meta-field { display:flex; flex-direction:column; gap:6px; min-width:0; }
-  .meta-label { color:var(--muted); font-size:14px; text-align:center; }
   .pill {
     background:var(--pill); border:1px solid var(--border); border-radius:14px; padding:12px 14px;
   }
-  .pill .k { color:var(--muted); font-size:12px; margin-bottom:4px; text-align:center; }
+  .pill .k { color:var(--muted); font-size:12px; margin-bottom:4px; }
   .pill .v { font-size:18px; font-weight:700; text-align:center; }
   #selectedHeight {
     color:var(--highlight);
@@ -275,8 +261,6 @@
     }
     .range-row .btns { gap:4px; }
     .range-row button { padding:9px 5px; white-space:nowrap; font-size:14px; }
-    .range-row .toggle { min-width:0; gap:2px; padding:2px; }
-    .range-row .toggle button { padding:8px 4px; }
     .range-row .field { min-width:0; }
     .refresh-btn { min-width:44px; width:44px; padding:0 8px; }
     .river-mode-field { order:1; }
@@ -306,7 +290,7 @@
 
     <div class="controls">
       <div class="field date-nav-field">
-        <label for="dateInput">日付をクリックまたはタップするとカレンダーから変更可能</label>
+        <label for="dateInput"><span class="date-nav-label-main">表示日</span>日付をクリックまたはタップするとカレンダーから変更可能</label>
         <div class="date-nav">
           <button id="btnPrev7" type="button" aria-label="1週間前"><span class="nav-step">1週間</span><span class="nav-arrow">&lt;&lt;</span></button>
           <button id="btnPrev1" type="button" aria-label="1日前"><span class="nav-step">1日</span><span class="nav-arrow">&lt;</span></button>
@@ -321,7 +305,7 @@
     </div>
 
     <div class="chart-stack">
-      <canvas id="chart" width="1040" height="667" aria-label="天文潮位と河川水位の比較グラフ"></canvas>
+      <canvas id="chart" width="1040" height="661" aria-label="天文潮位と河川水位の比較グラフ"></canvas>
       <div id="nowPulse" class="now-pulse" aria-hidden="true"></div>
     </div>
 
@@ -345,10 +329,10 @@
 
     <div class="range-row">
       <div class="field">
-        <label>表示日数</label>
-        <div class="toggle" role="group" aria-label="表示日数">
-          <button id="btn1" class="active" type="button" aria-pressed="true">1日</button>
-          <button id="btn2" type="button" aria-pressed="false">2日</button>
+        <label>表示範囲</label>
+        <div class="btns">
+          <button id="btn1" class="active" type="button">1日</button>
+          <button id="btn2" type="button">2日</button>
         </div>
       </div>
       <div class="field river-field">
@@ -368,10 +352,10 @@
         </select>
       </div>
       <div class="field river-mode-field">
-        <label>水位モード</label>
-        <div class="toggle" role="group" aria-label="水位モード">
-          <button id="riverModeRelative" class="active" type="button" aria-pressed="true">相対</button>
-          <button id="riverModeActual" type="button" aria-pressed="false">実水位</button>
+        <label>表示モード</label>
+        <div class="btns">
+          <button id="riverModeRelative" class="active" type="button">相対</button>
+          <button id="riverModeActual" type="button">実水位</button>
         </div>
       </div>
       <div class="field refresh-wrap">
@@ -380,13 +364,16 @@
       </div>
     </div>
 
-    <div class="sub">日付を選ぶと、1日または2日分の潮位変動と河川水位を表示できます。グラフをクリックまたはタップすると、その時刻の値を表示します。</div>
-    <div class="legend">
-      <span id="riverFootnoteText">※1 河川水位は、潮位との時刻差を比較しやすくするためグラフ上で縦方向に自動調整した表示値です。実際の河川水位を示すものではありません。参考指標として利用ください。<br></span>
-      潮位の10分値は気象庁の毎時潮位から直線補間した天文潮位で、潮名は月齢に基づく目安です。出典：<a href="https://www.data.jma.go.jp/kaiyou/db/tide/suisan/suisan.php?stn=D1" target="_blank" rel="noopener noreferrer">気象庁「潮位表 日立」</a>、<a href="https://tanyeee.github.io/kuji-waterlevel/" target="_blank" rel="noopener noreferrer">国土交通省データを利用した久慈川水位ビューア</a>
+    <div id="dataStatus" class="note data-status" role="status" aria-live="polite">
+      潮位データを読み込んでいます…
     </div>
-    <div id="dataStatus" class="note data-status" role="status" aria-live="polite">潮位データを読み込んでいます…</div>
     <div id="riverStatus" class="note river-status" role="status" aria-live="polite"></div>
+    <div class="sub">日付を選ぶと、1日または2日分の潮位変動を表示できます。河川水位は縦方向だけを自動調整し、山や谷が現れる時刻のずれを比較しやすくしています。グラフをクリックまたはタップすると、その時刻の値を表示します。</div>
+    <div class="legend">
+      <span class="swatch tide"></span>左軸：天文潮位（m）　<span class="swatch river"></span><span id="riverLegendLabel">河川水位（縦スケール自動調整）</span>　横軸：時刻（JST）。河川水位は表示中の両波形の5〜95パーセンタイルが縦方向に合うよう自動調整します。時刻は移動していません。両軸は基準面が異なるため、絶対的な高さの比較には使用できません。<br>
+      潮位の10分値は気象庁の毎時潮位から直線補間した天文潮位で、潮名は月齢に基づく目安です。出典：<a href="https://www.data.jma.go.jp/kaiyou/db/tide/suisan/suisan.php?stn=D1" target="_blank" rel="noopener noreferrer">気象庁「潮位表 日立」</a>、<a href="https://tanyeee.github.io/kuji-waterlevel/" target="_blank" rel="noopener noreferrer">国土交通省データを利用した久慈川水位ビューア</a>
+      <span id="riverFootnoteText"><br>※1 河川水位は、潮位との時刻差を比較しやすくするためグラフ上で縦方向に自動調整した表示値です。実際の河川水位を示すものではありません。</span>
+    </div>
   </div>
 </div>
 
@@ -500,8 +487,6 @@ function updateRiverModeUI() {
   const isActual = riverDisplayMode === 'actual';
   riverModeRelativeBtn.classList.toggle('active', !isActual);
   riverModeActualBtn.classList.toggle('active', isActual);
-  riverModeRelativeBtn.setAttribute('aria-pressed', String(!isActual));
-  riverModeActualBtn.setAttribute('aria-pressed', String(isActual));
   riverFootnoteMarkEl.style.display = isActual ? 'none' : '';
   riverFootnoteTextEl.style.display = isActual ? 'none' : '';
   riverLegendLabelEl.textContent = isActual ? '河川水位（実測）' : '河川水位（縦スケール自動調整）';
@@ -623,9 +608,10 @@ async function initializeData() {
   const currentYear = new Date().getFullYear();
   const manifestYears = await loadManifestYears();
   const candidateYears = new Set(
-    manifestYears.filter(year => year >= currentYear - 1 && year <= currentYear)
+    manifestYears.filter(year => year >= currentYear - 1 && year <= currentYear + 1)
   );
   candidateYears.add(currentYear);
+  candidateYears.add(currentYear + 1);
 
   const results = await Promise.allSettled(
     [...candidateYears].sort((a, b) => a - b).map(year => loadTideYear(year))
@@ -779,15 +765,14 @@ function roundedRectPath(x, y, width, height, radius) {
   ctx.closePath();
 }
 
-// Keep each label close to its extremum: highs above the curve, lows below.
-// Low labels may overlap the x-axis text, but the canvas leaves a 5px edge.
+// Draw compact callouts directly beside each high/low tide. Keeping the
+// time and height adjacent to the point makes the chart self-contained and
+// removes the need for separate high/low lists below it.
 function drawExtremaLabels(xFromMinute, yFromHeight, m, plotW, plotH) {
   const boxW = 116;
   const boxH = 66;
   const pointerH = 9;
-  const lineClearance = 1;
-  const inset = 5;
-
+  const inset = 4;
   ctx.save();
   ctx.lineWidth = 1.5;
   ctx.font = 'bold 27px sans-serif';
@@ -799,14 +784,11 @@ function drawExtremaLabels(xFromMinute, yFromHeight, m, plotW, plotH) {
     const pointY = yFromHeight(item.height);
     const isHigh = item.kind === 'high';
     const boxX = Math.max(m.left + inset, Math.min(pointX - boxW / 2, m.left + plotW - boxW - inset));
-    const preferredY = isHigh
-      ? pointY - lineClearance - pointerH - boxH
-      : pointY + lineClearance + pointerH;
-    const boxY = Math.max(0, Math.min(preferredY, chart.height - boxH - inset));
+    const preferredY = isHigh ? pointY - pointerH - boxH : pointY + pointerH;
+    const boxY = Math.max(m.top + inset, Math.min(preferredY, m.top + plotH - boxH - inset));
     const pointerBaseY = isHigh ? boxY + boxH : boxY;
-    const pointerTipY = isHigh ? pointY - lineClearance : pointY + lineClearance;
+    const pointerTipY = isHigh ? Math.min(pointY, pointerBaseY + pointerH) : Math.max(pointY, pointerBaseY - pointerH);
     const pointerHalf = 6;
-    const pointerBaseX = Math.max(boxX + pointerHalf, Math.min(pointX, boxX + boxW - pointerHalf));
 
     // A muted blue, only slightly darker than --chart-bg, retains contrast
     // without making the labels look like heavy dark panels.
@@ -817,8 +799,8 @@ function drawExtremaLabels(xFromMinute, yFromHeight, m, plotW, plotH) {
     ctx.fill();
     ctx.stroke();
     ctx.beginPath();
-    ctx.moveTo(pointerBaseX - pointerHalf, pointerBaseY);
-    ctx.lineTo(pointerBaseX + pointerHalf, pointerBaseY);
+    ctx.moveTo(pointX - pointerHalf, pointerBaseY);
+    ctx.lineTo(pointX + pointerHalf, pointerBaseY);
     ctx.lineTo(pointX, pointerTipY);
     ctx.closePath();
     ctx.fill();
@@ -976,9 +958,6 @@ const SUN_MOON_LABEL_PX = 27;
 const SUN_MOON_MOON_Y = 0;
 const SUN_MOON_SUN_Y = SUN_MOON_MOON_Y + SUN_MOON_BAND_H + 3;
 const SUN_MOON_BANDS_H = SUN_MOON_SUN_Y + SUN_MOON_BAND_H;
-// The plot stays 5px below the sun/moon bars. X-axis text begins directly
-// below the plot, with 5px kept at the canvas edge for low-tide callouts.
-const X_AXIS_LABEL_MARGIN_H = 76;
 
 function drawSunMoonBand(xFromMinute, dayOffsetMin, y, color, icon, riseDate, setDate, alwaysUp) {
   const intervals = computeUpIntervals(
@@ -1058,19 +1037,14 @@ function drawChart() {
   ctx.clearRect(0, 0, W, H);
   const hasRiver = currentRiverSeries.length >= 2;
   const isActualMode = isActualRiverMode();
-  // The plot begins 5px below the sun/moon bars. There is no blank gap before
-  // the x-axis text; the final 5px stays below the text/callout area.
+  // Top margin holds only the sun/moon bands now; the date title lives in the
+  // DOM element just above the canvas instead of being drawn on the canvas.
   // left widened from 64 to 80 to keep the (now 28px, up from 20px) y-axis
   // labels like "-0.4" from clipping against the canvas edge. right is
   // similarly widened only in 実水位 (actual) mode, which draws its own
   // right-side axis labels (m単位); 相対 mode keeps right:20 and draws no
   // right-axis labels, exactly as before.
-  const m = {
-    left: 80,
-    right: isActualMode ? 90 : 20,
-    top: SUN_MOON_BANDS_H + 5,
-    bottom: X_AXIS_LABEL_MARGIN_H + 5
-  };
+  const m = {left: 80, right: isActualMode ? 90 : 20, top: SUN_MOON_BANDS_H + 4, bottom: 76};
   const plotW = W - m.left - m.right;
   const plotH = H - m.top - m.bottom;
 
@@ -1197,7 +1171,7 @@ function drawChart() {
     ctx.font = '28px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
-    ctx.fillText(label, x, H - m.bottom);
+    ctx.fillText(label, x, H - m.bottom + 12);
   }
 
   updateDateDisplay();
@@ -1240,38 +1214,6 @@ function drawChart() {
   }
 
   drawExtremaLabels(xFromMinute, yFromHeight, m, plotW, plotH);
-
-  // Keep both solid waveforms readable even when a nearby callout partially
-  // overlaps them: redraw the lines above the callout after it is placed.
-  ctx.strokeStyle = lineColor;
-  ctx.lineWidth = 6;
-  ctx.beginPath();
-  currentSeries.forEach((p, i) => {
-    const x = xFromMinute(p.minute);
-    const y = yFromHeight(p.height);
-    if (i === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
-  });
-  ctx.stroke();
-  if (currentRiverAxis) {
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(m.left, m.top, plotW, plotH);
-    ctx.clip();
-    ctx.strokeStyle = riverColor;
-    ctx.lineWidth = 4.5;
-    ctx.beginPath();
-    let previous = null;
-    currentRiverSeries.forEach(point => {
-      const x = xFromMinute(point.minute);
-      const y = yFromRiverLevel(point.level);
-      if (!previous || point.minute - previous.minute > 20) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-      previous = point;
-    });
-    ctx.stroke();
-    ctx.restore();
-  }
 
   // The current-time indicator is now drawn as a solid dot with an animated
   // pulse ring (drawNowIndicator / #nowPulse) instead of this vertical
@@ -1319,7 +1261,7 @@ function drawNowIndicator() {
 //     on-screen position drifts left of .chart-stack's box — the dominant,
 //     "obvious on iPhone" source of the misalignment.
 //  2. chartRect (getBoundingClientRect()) is the canvas's border-box, but
-//     the 1040x667 bitmap is actually stretched into the content-box (the
+//     the 1040x661 bitmap is actually stretched into the content-box (the
 //     canvas has a 1px border on each side), so using chartRect.width alone
 //     as the scale denominator is off by ~2px — the "subtle even on
 //     desktop" drift.
@@ -1451,8 +1393,6 @@ function refresh(resetSelection = true) {
     dayCount = 1;
     btn1.classList.add('active');
     btn2.classList.remove('active');
-    btn1.setAttribute('aria-pressed', 'true');
-    btn2.setAttribute('aria-pressed', 'false');
   }
 
   currentSeries = buildSeries(dateStr, dayCount);
@@ -1477,8 +1417,6 @@ btn1.addEventListener('click', () => {
   dayCount = 1;
   btn1.classList.add('active');
   btn2.classList.remove('active');
-  btn1.setAttribute('aria-pressed', 'true');
-  btn2.setAttribute('aria-pressed', 'false');
   refresh();
 });
 
@@ -1487,8 +1425,6 @@ btn2.addEventListener('click', () => {
   dayCount = 2;
   btn2.classList.add('active');
   btn1.classList.remove('active');
-  btn1.setAttribute('aria-pressed', 'false');
-  btn2.setAttribute('aria-pressed', 'true');
   refresh();
 });
 
