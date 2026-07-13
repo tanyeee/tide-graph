@@ -4,14 +4,20 @@ export const RIVER_STATIONS = Object.freeze({
     name: '久慈大橋',
     riverId: 'kuji',
     riverName: '久慈川水系',
-    url: 'https://tanyeee.github.io/kuji-waterlevel/data/stations/kuji-ohashi/recent_10min.json'
+    url: 'https://tanyeee.github.io/kuji-waterlevel/data/stations/kuji-ohashi/recent_10min.json',
+    // Fixed right-axis range (m) for "実水位" (actual level) display mode,
+    // derived from ~10 years of station statistics. Not used by the default
+    // "相対" (relative) mode, which keeps auto-calibrating via
+    // calculateRiverAxis() exactly as before.
+    fixedRange: Object.freeze({ min: 0.3, max: 2.0 })
   }),
   sakakibashi: Object.freeze({
     id: 'sakakibashi',
     name: '榊橋',
     riverId: 'kuji',
     riverName: '久慈川水系',
-    url: 'https://tanyeee.github.io/kuji-waterlevel/data/stations/sakakibashi/recent_10min.json'
+    url: 'https://tanyeee.github.io/kuji-waterlevel/data/stations/sakakibashi/recent_10min.json',
+    fixedRange: Object.freeze({ min: -0.6, max: 0.8 })
   }),
   // The following four stations belong to the 涸沼・那珂川水系 group as
   // classified by kuji-waterlevel's config/stations.json (river id
@@ -22,28 +28,32 @@ export const RIVER_STATIONS = Object.freeze({
     name: '涸沼橋',
     riverId: 'hinuma-nakagawa',
     riverName: '涸沼・那珂川水系',
-    url: 'https://tanyeee.github.io/kuji-waterlevel/data/stations/hinuma-bashi/recent_10min.json'
+    url: 'https://tanyeee.github.io/kuji-waterlevel/data/stations/hinuma-bashi/recent_10min.json',
+    fixedRange: Object.freeze({ min: 0.2, max: 1.4 })
   }),
   'minato-ohashi': Object.freeze({
     id: 'minato-ohashi',
     name: '湊大橋',
     riverId: 'hinuma-nakagawa',
     riverName: '涸沼・那珂川水系',
-    url: 'https://tanyeee.github.io/kuji-waterlevel/data/stations/minato-ohashi/recent_10min.json'
+    url: 'https://tanyeee.github.io/kuji-waterlevel/data/stations/minato-ohashi/recent_10min.json',
+    fixedRange: Object.freeze({ min: -0.2, max: 1.5 })
   }),
   'suifu-bashi': Object.freeze({
     id: 'suifu-bashi',
     name: '水府橋',
     riverId: 'hinuma-nakagawa',
     riverName: '涸沼・那珂川水系',
-    url: 'https://tanyeee.github.io/kuji-waterlevel/data/stations/suifu-bashi/recent_10min.json'
+    url: 'https://tanyeee.github.io/kuji-waterlevel/data/stations/suifu-bashi/recent_10min.json',
+    fixedRange: Object.freeze({ min: 0.3, max: 2.0 })
   }),
   'kunita-ohashi': Object.freeze({
     id: 'kunita-ohashi',
     name: '国田大橋',
     riverId: 'hinuma-nakagawa',
     riverName: '涸沼・那珂川水系',
-    url: 'https://tanyeee.github.io/kuji-waterlevel/data/stations/kunita-ohashi/recent_10min.json'
+    url: 'https://tanyeee.github.io/kuji-waterlevel/data/stations/kunita-ohashi/recent_10min.json',
+    fixedRange: Object.freeze({ min: -0.6, max: 1.1 })
   })
 });
 
@@ -193,12 +203,32 @@ export function calculateRiverAxis(tideValues, riverValues, tideAxis) {
 // on the tide chart. This is deliberately not the observed river elevation:
 // calculateRiverAxis() scales the river series vertically to make timing
 // differences between its peaks/troughs and the sea tide easier to compare.
+// Only used by 相対 (relative) display mode; 実水位 (actual) mode shows the
+// raw reading directly instead.
 export function riverLevelToDisplayHeight(riverLevel, riverAxis, tideAxis) {
   if (!Number.isFinite(riverLevel) || !riverAxis || !tideAxis) return null;
   const riverSpan = riverAxis.max - riverAxis.min;
   const tideSpan = tideAxis.max - tideAxis.min;
   if (!(riverSpan > 0) || !(tideSpan > 0)) return null;
   return tideAxis.min + ((riverLevel - riverAxis.min) / riverSpan) * tideSpan;
+}
+
+// Extends a station's fixed 実水位 (actual level) axis range only on the
+// side(s) that the currently displayed river readings actually exceed,
+// rounding outward to the nearest `step` (default 0.5m) so the extended
+// bound is a "nice" round number rather than hugging the exact data extreme.
+// Returns the fixed range unchanged when there is no data (or none of it
+// exceeds the fixed bounds) and null when there's no fixed range to extend.
+export function extendFixedRiverRange(fixedRange, values, step = 0.5) {
+  if (!fixedRange) return null;
+  let { min, max } = fixedRange;
+  if (values && values.length) {
+    const dataMin = Math.min(...values);
+    const dataMax = Math.max(...values);
+    if (Number.isFinite(dataMin) && dataMin < min) min = Math.floor(dataMin / step) * step;
+    if (Number.isFinite(dataMax) && dataMax > max) max = Math.ceil(dataMax / step) * step;
+  }
+  return { min, max };
 }
 
 export function axisTicks(min, max, targetCount = 5) {

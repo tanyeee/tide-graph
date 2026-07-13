@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  RIVER_STATIONS,
   axisTicks,
   calculateRiverAxis,
+  extendFixedRiverRange,
   normalizeRiverPayload,
   pairRiverWithTide,
   percentile,
@@ -148,4 +150,42 @@ test('pairRiverWithTide interpolates the tide height even when a river reading d
   // series spans, so a river point's minute is always in range.
   const outOfRange = pairRiverWithTide([{ minute: 999, level: 3.0 }], tideSeries);
   assert.deepEqual(outOfRange, { pairedTides: [160], pairedLevels: [3.0] });
+});
+
+// Coverage for 実水位 (actual level) display mode: a fixed, per-station m
+// axis, extended only on the side normal operating conditions exceed it.
+
+test('every RIVER_STATIONS entry has a fixed 実水位 range with min < max', () => {
+  for (const [id, station] of Object.entries(RIVER_STATIONS)) {
+    assert.ok(station.fixedRange, `${id} is missing fixedRange`);
+    assert.ok(station.fixedRange.min < station.fixedRange.max, `${id} fixedRange min/max out of order`);
+  }
+});
+
+test('extendFixedRiverRange keeps the fixed range unchanged when readings stay within it', () => {
+  const fixedRange = { min: 0.3, max: 2.0 };
+  assert.deepEqual(extendFixedRiverRange(fixedRange, [0.5, 1.2, 1.9]), { min: 0.3, max: 2.0 });
+  // No data at all: still just the fixed range, unchanged.
+  assert.deepEqual(extendFixedRiverRange(fixedRange, []), { min: 0.3, max: 2.0 });
+  assert.equal(extendFixedRiverRange(null, [0.5]), null);
+});
+
+test('extendFixedRiverRange extends only the side actually exceeded, rounded outward to the nearest 0.5m', () => {
+  const fixedRange = { min: 0.3, max: 2.0 };
+
+  // Exceeds only the top: min stays fixed, max rounds up to the next 0.5m.
+  const highWater = extendFixedRiverRange(fixedRange, [0.8, 1.5, 2.15]);
+  assert.deepEqual(highWater, { min: 0.3, max: 2.5 });
+
+  // Exceeds only the bottom: max stays fixed, min rounds down to the next 0.5m.
+  const lowWater = extendFixedRiverRange(fixedRange, [0.05, 1.0, 1.8]);
+  assert.deepEqual(lowWater, { min: 0, max: 2.0 });
+
+  // Exceeds both sides at once, each independently rounded outward.
+  const bothSides = extendFixedRiverRange(fixedRange, [-0.4, 2.6]);
+  assert.deepEqual(bothSides, { min: -0.5, max: 3.0 });
+
+  // A custom step is honored (e.g. a coarser 1m extension granularity).
+  const coarseStep = extendFixedRiverRange(fixedRange, [2.2], 1);
+  assert.deepEqual(coarseStep, { min: 0.3, max: 3 });
 });
