@@ -319,7 +319,7 @@
     </div>
 
     <div class="chart-stack">
-      <canvas id="chart" width="1040" height="661" aria-label="天文潮位と河川水位の比較グラフ"></canvas>
+      <canvas id="chart" width="1040" height="829" aria-label="天文潮位と河川水位の比較グラフ"></canvas>
       <div id="nowPulse" class="now-pulse" aria-hidden="true"></div>
     </div>
 
@@ -781,66 +781,14 @@ function roundedRectPath(x, y, width, height, radius) {
   ctx.closePath();
 }
 
-// Draw compact callouts directly beside each high/low tide. Keeping the
-// time and height adjacent to the point makes the chart self-contained and
-// removes the need for separate high/low lists below it.
-function drawExtremaLabels(xFromMinute, yFromHeight, yFromRiverLevel, m, plotW, plotH) {
+// Keep extrema callouts in dedicated lanes outside the plot: high tides
+// above the waveform and low tides below it. This makes both tide and river
+// lines remain visible without needing to hunt for an overlap-free spot.
+function drawExtremaLabels(xFromMinute, yFromHeight, m, plotW, plotH) {
   const boxW = 116;
   const boxH = 66;
-  const closePointerH = 9;
-  const actualMode = isActualRiverMode();
-  // Actual-water-level mode has an independently scaled river line. Search
-  // a compact set of vertical and horizontal offsets rather than sending a
-  // label far away on one long vertical connector.
-  const movedPointerHeights = actualMode
-    ? [40, 60, 80, 100, 120, 140]
-    : [30, 50, 70, 90];
-  const movedHorizontalOffsets = [0, -36, 36, -72, 72, -108, 108];
-  const inset = 4;
+  const inset = 8;
   const plotBottom = m.top + plotH;
-
-  function lineOverlapsBox(series, yForPoint, boxX, boxY, padding) {
-    const left = boxX - padding;
-    const right = boxX + boxW + padding;
-    const top = boxY - padding;
-    const bottom = boxY + boxH + padding;
-    for (let index = 1; index < series.length; index++) {
-      const previous = series[index - 1];
-      const current = series[index];
-      const previousX = xFromMinute(previous.minute);
-      const currentX = xFromMinute(current.minute);
-      if (currentX < left || previousX > right) continue;
-      const previousY = yForPoint(previous);
-      const currentY = yForPoint(current);
-      if (!Number.isFinite(previousY) || !Number.isFinite(currentY)) continue;
-      const clippedLeft = Math.max(left, previousX);
-      const clippedRight = Math.min(right, currentX);
-      const yAt = x => previousY + (currentY - previousY) * ((x - previousX) / (currentX - previousX));
-      const y1 = yAt(clippedLeft);
-      const y2 = yAt(clippedRight);
-      if (Math.max(y1, y2) >= top && Math.min(y1, y2) <= bottom) return true;
-    }
-    return false;
-  }
-
-  function calloutCandidate(pointX, pointY, placeAbove, pointerH, horizontalOffset = 0) {
-    const desiredCenterX = pointX + horizontalOffset;
-    const boxX = Math.max(m.left + inset, Math.min(desiredCenterX - boxW / 2, m.left + plotW - boxW - inset));
-    const boxY = placeAbove ? pointY - pointerH - boxH : pointY + pointerH;
-    if (boxY < m.top + inset || boxY + boxH > plotBottom - inset) return null;
-    const overlapsTide = lineOverlapsBox(currentSeries, point => yFromHeight(point.height), boxX, boxY, 7);
-    // The actual-water-level line is visually prominent and uses an
-    // independent scale, so reserve a larger safety margin for it.
-    const riverPadding = actualMode ? 24 : 7;
-    const overlapsRiver = currentRiverAxis && lineOverlapsBox(
-      currentRiverSeries, point => yFromRiverLevel(point.level), boxX, boxY, riverPadding
-    );
-    return {
-      boxX, boxY, placeAbove, pointerH,
-      overlaps: overlapsTide || overlapsRiver,
-      distance: pointerH + Math.abs(horizontalOffset) * 0.45
-    };
-  }
 
   ctx.save();
   ctx.lineWidth = 1.5;
@@ -852,24 +800,9 @@ function drawExtremaLabels(xFromMinute, yFromHeight, yFromRiverLevel, m, plotW, 
     const pointX = xFromMinute(item.minute);
     const pointY = yFromHeight(item.height);
     const isHigh = item.kind === 'high';
-    // High tides prefer a label above and lows a label below. If that box
-    // would leave the plot or cover either waveform, flip it and choose the
-    // nearest clear candidate, allowing a modest horizontal offset first.
-    const preferred = calloutCandidate(pointX, pointY, isHigh, closePointerH);
-    const flippedCandidates = movedPointerHeights.flatMap(pointerH =>
-      movedHorizontalOffsets.map(offsetX =>
-        calloutCandidate(pointX, pointY, !isHigh, pointerH, offsetX)
-      )
-    ).filter(Boolean);
-    const clearFlipped = flippedCandidates
-      .filter(candidate => !candidate.overlaps)
-      .sort((a, b) => a.distance - b.distance)[0];
-    const candidate = preferred && !preferred.overlaps
-      ? preferred
-      : clearFlipped || preferred || flippedCandidates[0];
-    if (!candidate) return;
-    const { boxX, boxY, placeAbove } = candidate;
-    const pointerBaseY = placeAbove ? boxY + boxH : boxY;
+    const boxX = Math.max(m.left + inset, Math.min(pointX - boxW / 2, m.left + plotW - boxW - inset));
+    const boxY = isHigh ? m.top - boxH - inset : plotBottom + inset;
+    const pointerBaseY = isHigh ? boxY + boxH : boxY;
     const pointerHalf = 6;
     const pointerBaseX = Math.max(boxX + pointerHalf, Math.min(pointX, boxX + boxW - pointerHalf));
 
@@ -1041,6 +974,11 @@ const SUN_MOON_LABEL_PX = 27;
 const SUN_MOON_MOON_Y = 0;
 const SUN_MOON_SUN_Y = SUN_MOON_MOON_Y + SUN_MOON_BAND_H + 3;
 const SUN_MOON_BANDS_H = SUN_MOON_SUN_Y + SUN_MOON_BAND_H;
+// Dedicated callout lanes keep labels out of the waveform area. The chart
+// bitmap is correspondingly taller so the plot itself retains its former
+// vertical resolution after the lower high/low lists were removed.
+const EXTREMA_CALLOUT_LANE_H = 84;
+const X_AXIS_LABEL_MARGIN_H = 76;
 
 function drawSunMoonBand(xFromMinute, dayOffsetMin, y, color, icon, riseDate, setDate, alwaysUp) {
   const intervals = computeUpIntervals(
@@ -1120,14 +1058,19 @@ function drawChart() {
   ctx.clearRect(0, 0, W, H);
   const hasRiver = currentRiverSeries.length >= 2;
   const isActualMode = isActualRiverMode();
-  // Top margin holds only the sun/moon bands now; the date title lives in the
-  // DOM element just above the canvas instead of being drawn on the canvas.
+  // Top and bottom margins reserve lanes for the sun/moon bands and the
+  // extrema callouts; the date title lives in the DOM above the canvas.
   // left widened from 64 to 80 to keep the (now 28px, up from 20px) y-axis
   // labels like "-0.4" from clipping against the canvas edge. right is
   // similarly widened only in 実水位 (actual) mode, which draws its own
   // right-side axis labels (m単位); 相対 mode keeps right:20 and draws no
   // right-axis labels, exactly as before.
-  const m = {left: 80, right: isActualMode ? 90 : 20, top: SUN_MOON_BANDS_H + 4, bottom: 76};
+  const m = {
+    left: 80,
+    right: isActualMode ? 90 : 20,
+    top: SUN_MOON_BANDS_H + EXTREMA_CALLOUT_LANE_H,
+    bottom: X_AXIS_LABEL_MARGIN_H + EXTREMA_CALLOUT_LANE_H
+  };
   const plotW = W - m.left - m.right;
   const plotH = H - m.top - m.bottom;
 
@@ -1254,7 +1197,7 @@ function drawChart() {
     ctx.font = '28px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
-    ctx.fillText(label, x, H - m.bottom + 12);
+    ctx.fillText(label, x, H - X_AXIS_LABEL_MARGIN_H + 12);
   }
 
   updateDateDisplay();
@@ -1296,7 +1239,7 @@ function drawChart() {
     ctx.restore();
   }
 
-  drawExtremaLabels(xFromMinute, yFromHeight, yFromRiverLevel, m, plotW, plotH);
+  drawExtremaLabels(xFromMinute, yFromHeight, m, plotW, plotH);
 
   // The current-time indicator is now drawn as a solid dot with an animated
   // pulse ring (drawNowIndicator / #nowPulse) instead of this vertical
@@ -1344,7 +1287,7 @@ function drawNowIndicator() {
 //     on-screen position drifts left of .chart-stack's box — the dominant,
 //     "obvious on iPhone" source of the misalignment.
 //  2. chartRect (getBoundingClientRect()) is the canvas's border-box, but
-//     the 1040x661 bitmap is actually stretched into the content-box (the
+//     the 1040x829 bitmap is actually stretched into the content-box (the
 //     canvas has a 1px border on each side), so using chartRect.width alone
 //     as the scale denominator is off by ~2px — the "subtle even on
 //     desktop" drift.
