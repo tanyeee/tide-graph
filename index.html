@@ -1308,9 +1308,10 @@ function drawSelection(point, updateMeta = true) {
     selectedHeightEl.textContent = `${Math.round(point.height)} cm`;
     if (isActualRiverMode()) {
       // 実水位 mode: show the raw measured level (already in meters)
-      // directly in cm, no apparent-height conversion.
+      // directly in cm (rounded to a whole cm, matching 海洋潮位's integer
+      // style), no apparent-height conversion.
       selectedRiverHeightEl.textContent = riverPoint && Number.isFinite(riverPoint.level)
-        ? `${(riverPoint.level * 100).toFixed(1)} cm`
+        ? `${Math.round(riverPoint.level * 100)} cm`
         : '—';
     } else {
       const displayRiverHeight = riverPoint && currentRiverAxis
