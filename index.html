@@ -64,12 +64,13 @@
     padding:20px; box-shadow:var(--shadow);
   }
   h1 { margin:0 0 18px; font-size:clamp(24px,3vw,34px); }
-  .sub, .legend, .note { color:var(--muted); line-height:1.7; }
+  .sub, .legend, .note { color:var(--muted); font-size:14px; line-height:1.7; }
   .sub { margin-top:18px; }
   .legend { font-size:14px; margin-top:16px; }
   .river-footnote { color:#60a5fa; font-size:14px; line-height:1.7; margin-top:18px; }
   .legend.chart-legend { margin-top:8px; margin-bottom:4px; }
   .note { margin-top:12px; font-size:14px; }
+  .river-status { margin-top:0; }
   .data-status[data-state="error"], .river-status[data-state="error"] { color:#dc2626; font-weight:700; }
   .data-status[data-state="warning"], .river-status[data-state="warning"] { color:#d97706; font-weight:700; }
   .controls {
@@ -271,7 +272,7 @@
     .refresh-btn { min-width:44px; width:44px; padding:0 8px; }
     .river-mode-field { order:1; }
     .river-field { order:2; min-width:0; }
-    .river-field label { font-size:12px; }
+    .river-field label { font-size:14px; }
     .river-field select { padding:10px 8px; font-size:16px; }
     .refresh-wrap { order:3; margin-left:0; }
     .meta { grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
@@ -635,7 +636,7 @@ async function initializeData() {
   dateInput.disabled = false;
   datePickerButton.disabled = false;
   const defaultState = setDefaultDate();
-  const rangeMessage = `収録範囲：${jpDate(firstDate)}〜${jpDate(lastDate)}（気象庁・日立）`;
+  const rangeMessage = `収録範囲：${jpDate(firstDate)}〜${jpDate(lastDate)}`;
   if (defaultState === 'today') {
     setDataStatus(rangeMessage);
   } else {
@@ -1077,9 +1078,8 @@ function drawChart() {
     right: isActualMode ? 90 : 20,
     // Keep a deliberate 5px gap between the sun/moon bars and the plot.
     top: SUN_MOON_BANDS_H + 5,
-    // X-axis labels start immediately below the plot and retain a 5px
-    // breathing room to the canvas edge.
-    bottom: 28 + 5
+    // Leave 1px from the plot to the labels, then 5px below the labels.
+    bottom: 1 + 28 + 5
   };
   const plotW = W - m.left - m.right;
   const plotH = H - m.top - m.bottom;
@@ -1207,7 +1207,7 @@ function drawChart() {
     ctx.font = '28px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
-    ctx.fillText(label, x, H - m.bottom);
+    ctx.fillText(label, x, H - m.bottom + 1);
   }
 
   updateDateDisplay();
@@ -1441,7 +1441,7 @@ function refresh(resetSelection = true) {
     const station = RIVER_STATIONS[riverStationSelect.value];
     const start = riverMeta.dataset_start?.replace('T', ' ') || riverRecords[0]?.timestamp.replace('T', ' ');
     const end = riverMeta.dataset_end?.replace('T', ' ') || riverRecords.at(-1)?.timestamp.replace('T', ' ');
-    setRiverStatus(`${station.name}：${start}〜${end}（10分観測、${currentRiverSeries.length}点を表示）`);
+    setRiverStatus(`水位の収録範囲：${start}〜${end}`);
   }
   if (resetSelection) currentSelectedIndex = getInitialSelectedIndex();
   currentSelectedIndex = Math.max(0, Math.min(currentSeries.length - 1, currentSelectedIndex));
