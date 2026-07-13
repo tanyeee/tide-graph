@@ -792,7 +792,7 @@ function drawExtremaLabels(xFromMinute, yFromHeight, yFromRiverLevel, m, plotW) 
   const boxW = 116;
   const boxH = 66;
   const pointerH = 9;
-  const lineGap = 1;
+  const lineGap = 5;
   const inset = 4;
   ctx.save();
   ctx.lineWidth = 1.5;
@@ -1077,10 +1077,10 @@ function drawChart() {
   const m = {
     left: 80,
     right: isActualMode ? 90 : 20,
-    // Keep a deliberate 5px gap between the sun/moon bars and the plot.
-    top: SUN_MOON_BANDS_H + 5,
-    // Leave 1px from the plot to the labels, then 5px below the labels.
-    bottom: 1 + 28 + 5
+    // Keep a deliberate 30px gap between the sun/moon bars and the plot.
+    top: SUN_MOON_BANDS_H + 30,
+    // Leave 1px from the plot to the labels, then 30px below the labels.
+    bottom: 1 + 28 + 30
   };
   const plotW = W - m.left - m.right;
   const plotH = H - m.top - m.bottom;
