@@ -255,21 +255,25 @@
     .date-nav > button { min-width:0; width:44px; padding:8px 2px; }
     .date-nav > button .nav-step { font-size:9px; }
     .date-display { font-size:18px; }
-    .range-row { gap:6px; }
+    /* Keep all four river controls in one row on phone widths.  Grid makes
+       the intended order explicit: range, mode, station, then refresh.
+       The station column alone absorbs the remaining width, so it never
+       forces the whole field onto a second line. */
+    .range-row {
+      display:grid;
+      grid-template-columns:max-content max-content minmax(72px, 1fr) 44px;
+      align-items:end;
+      gap:4px;
+    }
     .range-row .btns { gap:4px; }
-    .range-row button { padding:9px 8px; white-space:nowrap; }
+    .range-row button { padding:9px 5px; white-space:nowrap; font-size:14px; }
+    .range-row .field { min-width:0; }
     .refresh-btn { min-width:44px; width:44px; padding:0 8px; }
+    .river-mode-field { order:1; }
+    .river-field { order:2; min-width:0; }
     .river-field label { font-size:12px; }
     .river-field select { padding:10px 8px; font-size:16px; }
-    /* At this width, 表示範囲+表示モード+更新 together need ~271px (fits in
-       the ~321px available at 375px), but all 4 range-row fields together
-       need ~407px (doesn't fit). Rather than rely on how flex-wrap treats
-       river-field's flex-basis:0 when deciding what spills to the next line
-       (unpredictable — it could just get squeezed instead of wrapping),
-       explicitly push river-field after the other three fields (via `order`,
-       which reflows visually without changing the DOM/tab order) and force
-       it to take a full line of its own. */
-    .river-field { order:1; flex:1 1 100%; }
+    .refresh-wrap { order:3; margin-left:0; }
     .meta { grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
     .pill { min-width:0; padding:10px; }
     .pill .v { font-size:16px; white-space:nowrap; }
