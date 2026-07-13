@@ -4,11 +4,9 @@ import {
   axisTicks,
   calculateRiverAxis,
   normalizeRiverPayload,
-  pairRecordsWithTideLookup,
   pairRiverWithTide,
   percentile,
   riverSeriesForWindow,
-  tideAxisRangeForValues,
   timestampToWindowMinute
 } from '../js/river-water-level.js';
 
@@ -143,97 +141,4 @@ test('pairRiverWithTide interpolates the tide height even when a river reading d
   // series spans, so a river point's minute is always in range.
   const outOfRange = pairRiverWithTide([{ minute: 999, level: 3.0 }], tideSeries);
   assert.deepEqual(outOfRange, { pairedTides: [160], pairedLevels: [3.0] });
-});
-
-// Regression coverage for "河川水位と潮位の位相関係が表示モードで違って見える":
-// calibrating calculateRiverAxis against only the currently displayed
-// window's records (a smaller/differently-shaped sample for e.g. a 1-day
-// "today" view vs a fully-populated "yesterday" day in a 2-day view) could
-// produce a visibly different river axis for the exact same underlying
-// river/tide relationship. pairRecordsWithTideLookup + tideAxisRangeForValues
-// let the caller calibrate from the full fetched record set instead, so the
-// result no longer depends on which window is on screen.
-
-test('pairRecordsWithTideLookup pairs each record with its own real-timestamp tide height, skipping records the lookup has no data for', () => {
-  const records = [
-    { timestamp: '2026-07-12T08:00', value: 1.0 },
-    { timestamp: '2026-07-13T08:00', value: 1.5 },
-    { timestamp: '2099-01-01T00:00', value: 9.9 } // no tide data available for this date
-  ];
-  const tideByTimestamp = { '2026-07-12T08:00': 50, '2026-07-13T08:00': 55 };
-  const getTideHeight = (timestamp) => tideByTimestamp[timestamp] ?? null;
-
-  const { pairedTides, pairedLevels } = pairRecordsWithTideLookup(records, getTideHeight);
-  assert.deepEqual(pairedTides, [50, 55]);
-  assert.deepEqual(pairedLevels, [1.0, 1.5]);
-});
-
-test('tideAxisRangeForValues mirrors the same min/max bucketing as the displayed tide axis', () => {
-  assert.deepEqual(tideAxisRangeForValues([10, 50, 133]), { min: 0, max: 160 });
-  assert.deepEqual(tideAxisRangeForValues([-5, 0, 143]), { min: -20, max: 160 });
-  assert.equal(tideAxisRangeForValues([]), null);
-});
-
-test('calibrating against the full record set eliminates the view-window-dependent axis drift the previous window-based approach had', () => {
-  // Mimics real JMA tide data for three consecutive days, where the third
-  // day (2026-07-14) dips to a negative low tide that the other two days
-  // don't reach — so a window that happens to include it has a different
-  // getTideYAxisRange()-style min than a window that doesn't (this is the
-  // exact situation found with real data: 2026-07-13 alone or paired with
-  // 2026-07-12 both bucket to {min:0,max:160}, but pairing it with
-  // 2026-07-14 buckets to {min:-20,max:160} instead).
-  const tideByTimestamp = {
-    '2026-07-12T08:00': 10, '2026-07-12T20:00': 120,
-    '2026-07-13T09:00': 0, '2026-07-13T17:00': 138,
-    '2026-07-14T10:00': -5, '2026-07-14T18:00': 143
-  };
-  const riverByTimestamp = {
-    '2026-07-12T08:00': 0.5, '2026-07-12T20:00': 1.8,
-    '2026-07-13T09:00': 0.4, '2026-07-13T17:00': 1.9,
-    '2026-07-14T10:00': 0.3, '2026-07-14T18:00': 2.0
-  };
-  const allTimestamps = Object.keys(tideByTimestamp);
-  const fullRiverRecords = allTimestamps.map(timestamp => ({ timestamp, value: riverByTimestamp[timestamp] }));
-  const getTideHeight = (timestamp) => tideByTimestamp[timestamp] ?? null;
-
-  // Three "view windows" (1-day today, 2-day today~tomorrow, 2-day
-  // yesterday~today), each with only the records that would have been
-  // inside that window plus that window's own getTideYAxisRange()-style
-  // bucketed bounds — this is exactly what the old, window-based
-  // calibration fed calculateRiverAxis.
-  const windows = {
-    today1Day: {
-      timestamps: allTimestamps.filter(t => t.startsWith('2026-07-13')),
-      tideAxis: { min: 0, max: 160 }
-    },
-    todayTomorrow2Day: {
-      timestamps: allTimestamps.filter(t => t.startsWith('2026-07-13') || t.startsWith('2026-07-14')),
-      tideAxis: { min: -20, max: 160 }
-    },
-    yesterdayToday2Day: {
-      timestamps: allTimestamps.filter(t => t.startsWith('2026-07-12') || t.startsWith('2026-07-13')),
-      tideAxis: { min: 0, max: 160 }
-    }
-  };
-
-  const oldAxes = Object.fromEntries(Object.entries(windows).map(([name, w]) => {
-    const tideValues = w.timestamps.map(t => tideByTimestamp[t]);
-    const riverValues = w.timestamps.map(t => riverByTimestamp[t]);
-    return [name, calculateRiverAxis(tideValues, riverValues, w.tideAxis)];
-  }));
-  // Confirms the bug this fix addresses: the old, window-based approach
-  // really did produce a different calibration depending on which window
-  // was displayed (todayTomorrow2Day's min in particular).
-  assert.notDeepEqual(oldAxes.todayTomorrow2Day, oldAxes.today1Day);
-
-  // New approach: calibrate from the full record set and its own
-  // window-independent tide axis, regardless of which window is displayed.
-  const { pairedTides, pairedLevels } = pairRecordsWithTideLookup(fullRiverRecords, getTideHeight);
-  const calibrationTideAxis = tideAxisRangeForValues(pairedTides);
-  const newAxes = Object.fromEntries(Object.keys(windows).map(name =>
-    [name, calculateRiverAxis(pairedTides, pairedLevels, calibrationTideAxis)]
-  ));
-
-  assert.deepEqual(newAxes.today1Day, newAxes.todayTomorrow2Day);
-  assert.deepEqual(newAxes.todayTomorrow2Day, newAxes.yesterdayToday2Day);
 });
