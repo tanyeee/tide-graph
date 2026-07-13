@@ -329,7 +329,7 @@
     <div class="seekbar">
       <button id="btnPrev60" class="double" type="button" aria-label="1時間前"><span class="nav-step">1時間</span><span class="nav-arrow">&lt;&lt;</span></button>
       <button id="btnPrev10" type="button" aria-label="10分前"><span class="nav-step">10分</span><span class="nav-arrow">&lt;</span></button>
-      <div id="tideName" class="tide-name" aria-label="潮名（目安）" title="月齢に基づく目安">-</div>
+      <div id="tideName" class="tide-name" aria-label="潮名">-</div>
       <button id="btnNext10" type="button" aria-label="10分後"><span class="nav-step">10分</span><span class="nav-arrow">&gt;</span></button>
       <button id="btnNext60" class="double" type="button" aria-label="1時間後"><span class="nav-step">1時間</span><span class="nav-arrow">&gt;&gt;</span></button>
     </div>
@@ -374,8 +374,8 @@
     <div id="riverFootnoteText" class="river-footnote">※1 河川水位は、潮位との時刻差を比較しやすくするためグラフ上で縦方向に自動調整した表示値です。実際の河川水位を示すものではありません。参考指標として利用ください。</div>
     <div class="sub">日付を選ぶと、1日または2日分の潮位変動と河川水位を表示できます。グラフをクリックまたはタップすると、その時刻の値を表示します。</div>
     <div class="legend">
-      潮位の10分値は気象庁の毎時潮位から直線補間した天文潮位で、潮名は月齢に基づく目安です。<br>
-      出典：<a href="https://www.data.jma.go.jp/kaiyou/db/tide/suisan/suisan.php?stn=D1" target="_blank" rel="noopener noreferrer">気象庁「潮位表 日立」</a>、<a href="https://tanyeee.github.io/kuji-waterlevel/" target="_blank" rel="noopener noreferrer">国土交通省データを利用した久慈川水位ビューア</a>
+      潮位の10分値は気象庁の毎時潮位から直線補間した天文潮位です。<br>
+      出典：<a href="https://www.data.jma.go.jp/kaiyou/db/tide/suisan/suisan.php?stn=D1" target="_blank" rel="noopener noreferrer">気象庁「潮位表 日立」</a>、<a href="https://www.mirc.jp/online/w/w-tide/knowledge/SN-det.html" target="_blank" rel="noopener noreferrer">日本水路協会 MIRC「科学的な潮名の決め方」</a>、<a href="https://tanyeee.github.io/kuji-waterlevel/" target="_blank" rel="noopener noreferrer">国土交通省データを利用した久慈川水位ビューア</a>
     </div>
     <div id="dataStatus" class="note data-status" role="status" aria-live="polite">
       潮位データを読み込んでいます…
@@ -402,6 +402,7 @@ import {
   riverSeriesForWindow
 } from './js/river-water-level.js';
 import { getTimes, getMoonTimes, getMoonIllumination } from './js/suncalc.js';
+import { getScientificTideName } from './js/tide-names.js';
 import {
   interpolateHeightAtMinute,
   shouldScheduleMarkerRefresh
@@ -912,8 +913,8 @@ function getLocalSunTimes(dateStr) {
 
 // Maps SunCalc's moon phase (0..1, 0=new, 0.25=first quarter, 0.5=full,
 // 0.75=last quarter) to one of the 8 standard moon-phase emoji. This is
-// independent of getJapaneseTideName's own lunar-age calculation (used only
-// for 潮名) — the two are unrelated and neither is changed by the other.
+// independent of the scientific tide-name calculation, which uses the
+// Moon–Sun ecliptic longitude difference at JST midnight.
 const MOON_PHASE_EMOJI = ['🌑', '🌒', '🌓', '🌔', '🌕', '🌖', '🌗', '🌘'];
 
 function getMoonPhaseEmoji(dateStr) {
@@ -1420,7 +1421,7 @@ function syncNowMarkerEffects() {
 function refresh(resetSelection = true) {
   const dateStr = dateInput.value;
   if (!dataMap[dateStr]) return;
-  tideNameEl.textContent = getJapaneseTideName(dateStr);
+  tideNameEl.textContent = getScientificTideName(dateStr);
 
   const nextDate = addDays(dateStr, 1);
   const canShow2 = !!dataMap[nextDate];
@@ -1479,31 +1480,6 @@ function moveSelection(step) {
 }
 
 
-function getMoonAge(dateStr) {
-  const date = new Date(dateStr + 'T12:00:00+09:00');
-  const base = new Date('2000-01-06T18:14:00Z');
-  const synodicMonth = 29.530588853;
-  let age = ((date - base) / 86400000) % synodicMonth;
-  if (age < 0) age += synodicMonth;
-  return age;
-}
-
-function getJapaneseTideName(dateStr) {
-  const age = getMoonAge(dateStr);
-  if (age < 1.5) return '大潮';
-  if (age < 4.5) return '中潮';
-  if (age < 7.5) return '小潮';
-  if (age < 9.5) return '長潮';
-  if (age < 10.5) return '若潮';
-  if (age < 12.5) return '中潮';
-  if (age < 14.5) return '大潮';
-  if (age < 17.5) return '中潮';
-  if (age < 20.5) return '小潮';
-  if (age < 22.5) return '長潮';
-  if (age < 23.5) return '若潮';
-  if (age < 25.5) return '中潮';
-  return '大潮';
-}
 
 btnPrev7.addEventListener('click', () => shiftDateBy(-7));
 btnPrev1.addEventListener('click', () => shiftDateBy(-1));
