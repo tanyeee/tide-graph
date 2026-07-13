@@ -17,7 +17,12 @@ export const RIVER_STATIONS = Object.freeze({
     riverId: 'kuji',
     riverName: '久慈川水系',
     url: 'https://tanyeee.github.io/kuji-waterlevel/data/stations/sakakibashi/recent_10min.json',
-    fixedRange: Object.freeze({ min: -0.6, max: 0.8 })
+    // Tuned down from {min:-0.6,max:0.8}: the original upper bound (based on
+    // full 10yr p99, which includes flood days) left quiet-period readings
+    // riding high and small in the fixed axis. New bound = recent quiet-
+    // period max (~0.49m) + ~0.15m margin, rounded to 0.1m; lower bound
+    // widened slightly per user feedback after the upper bound shrank.
+    fixedRange: Object.freeze({ min: -0.7, max: 0.6 })
   }),
   // The following four stations belong to the 涸沼・那珂川水系 group as
   // classified by kuji-waterlevel's config/stations.json (river id
@@ -29,7 +34,11 @@ export const RIVER_STATIONS = Object.freeze({
     riverId: 'hinuma-nakagawa',
     riverName: '涸沼・那珂川水系',
     url: 'https://tanyeee.github.io/kuji-waterlevel/data/stations/hinuma-bashi/recent_10min.json',
-    fixedRange: Object.freeze({ min: 0.2, max: 1.4 })
+    // Tuned down from {min:0.2,max:1.4}: same rationale as sakakibashi.
+    // New max = recent quiet-period max (~1.17m) + ~0.15m margin, rounded to
+    // 0.1m. Lower bound left unchanged (already close to the quiet-period
+    // low).
+    fixedRange: Object.freeze({ min: 0.2, max: 1.3 })
   }),
   'minato-ohashi': Object.freeze({
     id: 'minato-ohashi',
@@ -53,7 +62,11 @@ export const RIVER_STATIONS = Object.freeze({
     riverId: 'hinuma-nakagawa',
     riverName: '涸沼・那珂川水系',
     url: 'https://tanyeee.github.io/kuji-waterlevel/data/stations/kunita-ohashi/recent_10min.json',
-    fixedRange: Object.freeze({ min: -0.6, max: 1.1 })
+    // Tuned down from {min:-0.6,max:1.1}: same rationale as sakakibashi.
+    // New max = recent quiet-period max (~0.76m) + ~0.15m margin, rounded to
+    // 0.1m. Lower bound left unchanged (already well clear of the
+    // quiet-period low).
+    fixedRange: Object.freeze({ min: -0.6, max: 0.9 })
   })
 });
 

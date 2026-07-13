@@ -162,6 +162,22 @@ test('every RIVER_STATIONS entry has a fixed 実水位 range with min < max', ()
   }
 });
 
+// Regression lock for the upstream-station range tuning: 涸沼橋/国田大橋/榊橋
+// had upper bounds based on the full 10yr p99 (which includes flood days),
+// leaving quiet-period readings riding high and small in the fixed axis on
+// real devices. Their upper bounds were lowered to (recent quiet-period max
+// + ~0.15m, rounded to 0.1m); 榊橋's lower bound was also widened slightly
+// per user feedback. 久慈大橋・湊大橋・水府橋 are intentionally unchanged.
+test('tunes the upstream (涸沼橋/国田大橋/榊橋) fixed ranges down; leaves 久慈大橋/湊大橋/水府橋 unchanged', () => {
+  assert.deepEqual(RIVER_STATIONS['hinuma-bashi'].fixedRange, { min: 0.2, max: 1.3 });
+  assert.deepEqual(RIVER_STATIONS['kunita-ohashi'].fixedRange, { min: -0.6, max: 0.9 });
+  assert.deepEqual(RIVER_STATIONS.sakakibashi.fixedRange, { min: -0.7, max: 0.6 });
+
+  assert.deepEqual(RIVER_STATIONS['kuji-ohashi'].fixedRange, { min: 0.3, max: 2.0 });
+  assert.deepEqual(RIVER_STATIONS['minato-ohashi'].fixedRange, { min: -0.2, max: 1.5 });
+  assert.deepEqual(RIVER_STATIONS['suifu-bashi'].fixedRange, { min: 0.3, max: 2.0 });
+});
+
 test('extendFixedRiverRange keeps the fixed range unchanged when readings stay within it', () => {
   const fixedRange = { min: 0.3, max: 2.0 };
   assert.deepEqual(extendFixedRiverRange(fixedRange, [0.5, 1.2, 1.9]), { min: 0.3, max: 2.0 });
