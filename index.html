@@ -198,12 +198,6 @@
   @media (prefers-reduced-motion: reduce) {
     .now-pulse { display:none !important; animation:none; }
   }
-  .hl {
-    display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:14px;
-  }
-  .hl ul { margin:8px 0 0; padding-left:18px; }
-  .hl li { margin:4px 0; }
-  .section-title { font-size:14px; font-weight:700; color:var(--text); }
   .seekbar {
     display:grid; grid-template-columns:64px 64px 1fr 64px 64px; align-items:center;
     gap:12px; margin-top:12px; padding:0 4px;
@@ -286,9 +280,6 @@
     .tide-name { font-size:24px; }
     .legend.chart-legend { font-size:12px; }
     .legend.chart-legend .swatch { margin-right:.25em; }
-    .hl { gap:8px; }
-    .hl .section-title { font-size:12px; }
-    .hl li { font-size:12px; }
   }
 </style>
 </head>
@@ -373,17 +364,6 @@
       </div>
     </div>
 
-    <div class="hl">
-      <div class="pill">
-        <div class="section-title">選択日の満潮</div>
-        <ul id="highList"></ul>
-      </div>
-      <div class="pill">
-        <div class="section-title">選択日の干潮</div>
-        <ul id="lowList"></ul>
-      </div>
-    </div>
-
     <div id="dataStatus" class="note data-status" role="status" aria-live="polite">
       潮位データを読み込んでいます…
     </div>
@@ -452,8 +432,6 @@ const tideNameEl = document.getElementById('tideName');
 const selectedTimeEl = document.getElementById('selectedTime');
 const selectedHeightEl = document.getElementById('selectedHeight');
 const selectedRiverHeightEl = document.getElementById('selectedRiverHeight');
-const highList = document.getElementById('highList');
-const lowList = document.getElementById('lowList');
 const dataStatusEl = document.getElementById('dataStatus');
 const riverStatusEl = document.getElementById('riverStatus');
 
@@ -753,29 +731,86 @@ function buildSeries(startDate, days) {
   return out;
 }
 
-function updateTideLists(dateStr) {
-  const rec = dataMap[dateStr];
-  highList.innerHTML = '';
-  lowList.innerHTML = '';
-  if (!rec) return;
-  if (rec.highs.length === 0) {
-    highList.innerHTML = '<li>該当なし</li>';
-  } else {
-    rec.highs.forEach(item => {
-      const li = document.createElement('li');
-      li.textContent = `${item.time}　${item.height} cm`;
-      highList.appendChild(li);
-    });
+function extremaForWindow(startDate, days) {
+  const extrema = [];
+  for (let day = 0; day < days; day++) {
+    const rec = dataMap[addDays(startDate, day)];
+    if (!rec) continue;
+    for (const [kind, values] of [['high', rec.highs], ['low', rec.lows]]) {
+      for (const item of values) {
+        const [hour, minute] = item.time.split(':').map(Number);
+        extrema.push({
+          kind,
+          minute: day * 24 * 60 + hour * 60 + minute,
+          time: item.time,
+          height: item.height
+        });
+      }
+    }
   }
-  if (rec.lows.length === 0) {
-    lowList.innerHTML = '<li>該当なし</li>';
-  } else {
-    rec.lows.forEach(item => {
-      const li = document.createElement('li');
-      li.textContent = `${item.time}　${item.height} cm`;
-      lowList.appendChild(li);
-    });
-  }
+  return extrema;
+}
+
+function roundedRectPath(x, y, width, height, radius) {
+  const r = Math.min(radius, width / 2, height / 2);
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + width - r, y);
+  ctx.quadraticCurveTo(x + width, y, x + width, y + r);
+  ctx.lineTo(x + width, y + height - r);
+  ctx.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
+  ctx.lineTo(x + r, y + height);
+  ctx.quadraticCurveTo(x, y + height, x, y + height - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+// Draw compact callouts directly beside each high/low tide. Keeping the
+// time and height adjacent to the point makes the chart self-contained and
+// removes the need for separate high/low lists below it.
+function drawExtremaLabels(xFromMinute, yFromHeight, m, plotW, plotH) {
+  const boxW = 88;
+  const boxH = 42;
+  const pointerH = 8;
+  const inset = 4;
+  ctx.save();
+  ctx.lineWidth = 1.5;
+  ctx.font = 'bold 16px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  extremaForWindow(dateInput.value, dayCount).forEach(item => {
+    const pointX = xFromMinute(item.minute);
+    const pointY = yFromHeight(item.height);
+    const isHigh = item.kind === 'high';
+    const boxX = Math.max(m.left + inset, Math.min(pointX - boxW / 2, m.left + plotW - boxW - inset));
+    const preferredY = isHigh ? pointY - pointerH - boxH : pointY + pointerH;
+    const boxY = Math.max(m.top + inset, Math.min(preferredY, m.top + plotH - boxH - inset));
+    const pointerBaseY = isHigh ? boxY + boxH : boxY;
+    const pointerTipY = isHigh ? Math.min(pointY, pointerBaseY + pointerH) : Math.max(pointY, pointerBaseY - pointerH);
+    const pointerHalf = 6;
+
+    ctx.fillStyle = 'rgba(15, 23, 42, .88)';
+    ctx.strokeStyle = 'rgba(255, 255, 255, .88)';
+    ctx.beginPath();
+    roundedRectPath(boxX, boxY, boxW, boxH, 7);
+    ctx.fill();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(pointX - pointerHalf, pointerBaseY);
+    ctx.lineTo(pointX + pointerHalf, pointerBaseY);
+    ctx.lineTo(pointX, pointerTipY);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = '#fff';
+    ctx.fillText(item.time, boxX + boxW / 2, boxY + 13);
+    ctx.font = 'bold 15px sans-serif';
+    ctx.fillText(`${Math.round(item.height)} cm`, boxX + boxW / 2, boxY + 29);
+    ctx.font = 'bold 16px sans-serif';
+  });
+  ctx.restore();
 }
 
 function getTideYAxisRange() {
@@ -1176,6 +1211,8 @@ function drawChart() {
     ctx.restore();
   }
 
+  drawExtremaLabels(xFromMinute, yFromHeight, m, plotW, plotH);
+
   // The current-time indicator is now drawn as a solid dot with an animated
   // pulse ring (drawNowIndicator / #nowPulse) instead of this vertical
   // dashed line, so the dashed-line drawing that used to live here has been
@@ -1370,7 +1407,6 @@ function refresh(resetSelection = true) {
   }
   if (resetSelection) currentSelectedIndex = getInitialSelectedIndex();
   currentSelectedIndex = Math.max(0, Math.min(currentSeries.length - 1, currentSelectedIndex));
-  updateTideLists(dateStr);
   drawSelection(currentSeries[currentSelectedIndex]);
   syncNowMarkerEffects();
 }
