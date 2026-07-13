@@ -768,11 +768,48 @@ function roundedRectPath(x, y, width, height, radius) {
 // Draw compact callouts directly beside each high/low tide. Keeping the
 // time and height adjacent to the point makes the chart self-contained and
 // removes the need for separate high/low lists below it.
-function drawExtremaLabels(xFromMinute, yFromHeight, m, plotW, plotH) {
+function drawExtremaLabels(xFromMinute, yFromHeight, yFromRiverLevel, m, plotW, plotH) {
   const boxW = 116;
   const boxH = 66;
-  const pointerH = 9;
+  const closePointerH = 9;
+  const movedPointerHeights = [30, 50, 70, 90];
   const inset = 4;
+  const plotBottom = m.top + plotH;
+
+  function lineOverlapsBox(series, yForPoint, boxX, boxY) {
+    const padding = 5;
+    const left = boxX - padding;
+    const right = boxX + boxW + padding;
+    const top = boxY - padding;
+    const bottom = boxY + boxH + padding;
+    for (let index = 1; index < series.length; index++) {
+      const previous = series[index - 1];
+      const current = series[index];
+      const previousX = xFromMinute(previous.minute);
+      const currentX = xFromMinute(current.minute);
+      if (currentX < left || previousX > right) continue;
+      const previousY = yForPoint(previous);
+      const currentY = yForPoint(current);
+      if (!Number.isFinite(previousY) || !Number.isFinite(currentY)) continue;
+      const clippedLeft = Math.max(left, previousX);
+      const clippedRight = Math.min(right, currentX);
+      const yAt = x => previousY + (currentY - previousY) * ((x - previousX) / (currentX - previousX));
+      const y1 = yAt(clippedLeft);
+      const y2 = yAt(clippedRight);
+      if (Math.max(y1, y2) >= top && Math.min(y1, y2) <= bottom) return true;
+    }
+    return false;
+  }
+
+  function calloutCandidate(pointX, pointY, placeAbove, pointerH) {
+    const boxX = Math.max(m.left + inset, Math.min(pointX - boxW / 2, m.left + plotW - boxW - inset));
+    const boxY = placeAbove ? pointY - pointerH - boxH : pointY + pointerH;
+    if (boxY < m.top + inset || boxY + boxH > plotBottom - inset) return null;
+    const overlapsTide = lineOverlapsBox(currentSeries, point => yFromHeight(point.height), boxX, boxY);
+    const overlapsRiver = currentRiverAxis && lineOverlapsBox(currentRiverSeries, point => yFromRiverLevel(point.level), boxX, boxY);
+    return { boxX, boxY, placeAbove, pointerH, overlaps: overlapsTide || overlapsRiver };
+  }
+
   ctx.save();
   ctx.lineWidth = 1.5;
   ctx.font = 'bold 27px sans-serif';
@@ -783,12 +820,22 @@ function drawExtremaLabels(xFromMinute, yFromHeight, m, plotW, plotH) {
     const pointX = xFromMinute(item.minute);
     const pointY = yFromHeight(item.height);
     const isHigh = item.kind === 'high';
-    const boxX = Math.max(m.left + inset, Math.min(pointX - boxW / 2, m.left + plotW - boxW - inset));
-    const preferredY = isHigh ? pointY - pointerH - boxH : pointY + pointerH;
-    const boxY = Math.max(m.top + inset, Math.min(preferredY, m.top + plotH - boxH - inset));
-    const pointerBaseY = isHigh ? boxY + boxH : boxY;
-    const pointerTipY = isHigh ? Math.min(pointY, pointerBaseY + pointerH) : Math.max(pointY, pointerBaseY - pointerH);
+    // High tides prefer a label above and lows a label below. If that box
+    // would leave the plot or cover either waveform, flip it to the other
+    // side with a longer pointer so the label clears the curve.
+    const preferred = calloutCandidate(pointX, pointY, isHigh, closePointerH);
+    const flippedCandidates = movedPointerHeights
+      .map(pointerH => calloutCandidate(pointX, pointY, !isHigh, pointerH))
+      .filter(Boolean);
+    const clearFlipped = flippedCandidates.find(candidate => !candidate.overlaps);
+    const candidate = preferred && !preferred.overlaps
+      ? preferred
+      : clearFlipped || preferred || flippedCandidates[0];
+    if (!candidate) return;
+    const { boxX, boxY, placeAbove } = candidate;
+    const pointerBaseY = placeAbove ? boxY + boxH : boxY;
     const pointerHalf = 6;
+    const pointerBaseX = Math.max(boxX + pointerHalf, Math.min(pointX, boxX + boxW - pointerHalf));
 
     // A muted blue, only slightly darker than --chart-bg, retains contrast
     // without making the labels look like heavy dark panels.
@@ -799,9 +846,9 @@ function drawExtremaLabels(xFromMinute, yFromHeight, m, plotW, plotH) {
     ctx.fill();
     ctx.stroke();
     ctx.beginPath();
-    ctx.moveTo(pointX - pointerHalf, pointerBaseY);
-    ctx.lineTo(pointX + pointerHalf, pointerBaseY);
-    ctx.lineTo(pointX, pointerTipY);
+    ctx.moveTo(pointerBaseX - pointerHalf, pointerBaseY);
+    ctx.lineTo(pointerBaseX + pointerHalf, pointerBaseY);
+    ctx.lineTo(pointX, pointY);
     ctx.closePath();
     ctx.fill();
     ctx.stroke();
@@ -1213,7 +1260,7 @@ function drawChart() {
     ctx.restore();
   }
 
-  drawExtremaLabels(xFromMinute, yFromHeight, m, plotW, plotH);
+  drawExtremaLabels(xFromMinute, yFromHeight, yFromRiverLevel, m, plotW, plotH);
 
   // The current-time indicator is now drawn as a solid dot with an animated
   // pulse ring (drawNowIndicator / #nowPulse) instead of this vertical
