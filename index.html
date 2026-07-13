@@ -319,7 +319,7 @@
     </div>
 
     <div class="chart-stack">
-      <canvas id="chart" width="1040" height="737" aria-label="天文潮位と河川水位の比較グラフ"></canvas>
+      <canvas id="chart" width="1040" height="667" aria-label="天文潮位と河川水位の比較グラフ"></canvas>
       <div id="nowPulse" class="now-pulse" aria-hidden="true"></div>
     </div>
 
@@ -782,13 +782,13 @@ function roundedRectPath(x, y, width, height, radius) {
 }
 
 // Keep each label close to its extremum: highs above the curve, lows below.
-// When a low tide reaches the bottom edge it may extend across the x-axis
-// labels into the extra space below them, instead of being sent far away.
+// Low labels may overlap the x-axis text, but the canvas leaves a 5px edge.
 function drawExtremaLabels(xFromMinute, yFromHeight, m, plotW, plotH) {
   const boxW = 116;
   const boxH = 66;
+  const pointerH = 9;
+  const lineClearance = 1;
   const inset = 5;
-  const plotBottom = m.top + plotH;
 
   ctx.save();
   ctx.lineWidth = 1.5;
@@ -801,9 +801,12 @@ function drawExtremaLabels(xFromMinute, yFromHeight, m, plotW, plotH) {
     const pointY = yFromHeight(item.height);
     const isHigh = item.kind === 'high';
     const boxX = Math.max(m.left + inset, Math.min(pointX - boxW / 2, m.left + plotW - boxW - inset));
-    const preferredY = isHigh ? pointY - boxH - inset : pointY + inset;
+    const preferredY = isHigh
+      ? pointY - lineClearance - pointerH - boxH
+      : pointY + lineClearance + pointerH;
     const boxY = Math.max(0, Math.min(preferredY, chart.height - boxH - inset));
     const pointerBaseY = isHigh ? boxY + boxH : boxY;
+    const pointerTipY = isHigh ? pointY - lineClearance : pointY + lineClearance;
     const pointerHalf = 6;
     const pointerBaseX = Math.max(boxX + pointerHalf, Math.min(pointX, boxX + boxW - pointerHalf));
 
@@ -818,7 +821,7 @@ function drawExtremaLabels(xFromMinute, yFromHeight, m, plotW, plotH) {
     ctx.beginPath();
     ctx.moveTo(pointerBaseX - pointerHalf, pointerBaseY);
     ctx.lineTo(pointerBaseX + pointerHalf, pointerBaseY);
-    ctx.lineTo(pointX, pointY);
+    ctx.lineTo(pointX, pointerTipY);
     ctx.closePath();
     ctx.fill();
     ctx.stroke();
@@ -975,10 +978,9 @@ const SUN_MOON_LABEL_PX = 27;
 const SUN_MOON_MOON_Y = 0;
 const SUN_MOON_SUN_Y = SUN_MOON_MOON_Y + SUN_MOON_BAND_H + 3;
 const SUN_MOON_BANDS_H = SUN_MOON_SUN_Y + SUN_MOON_BAND_H;
-// The plot stays close to the sun/moon bars (5px); extra canvas space is
-// reserved after the x-axis labels so low-tide callouts can spill downward.
+// The plot stays 5px below the sun/moon bars. X-axis text begins directly
+// below the plot, with 5px kept at the canvas edge for low-tide callouts.
 const X_AXIS_LABEL_MARGIN_H = 76;
-const LOW_CALLOUT_OVERFLOW_H = 76;
 
 function drawSunMoonBand(xFromMinute, dayOffsetMin, y, color, icon, riseDate, setDate, alwaysUp) {
   const intervals = computeUpIntervals(
@@ -1058,8 +1060,8 @@ function drawChart() {
   ctx.clearRect(0, 0, W, H);
   const hasRiver = currentRiverSeries.length >= 2;
   const isActualMode = isActualRiverMode();
-  // The plot begins just below the sun/moon bars. The larger lower margin
-  // keeps space after the x-axis labels for low-tide callouts.
+  // The plot begins 5px below the sun/moon bars. There is no blank gap before
+  // the x-axis text; the final 5px stays below the text/callout area.
   // left widened from 64 to 80 to keep the (now 28px, up from 20px) y-axis
   // labels like "-0.4" from clipping against the canvas edge. right is
   // similarly widened only in 実水位 (actual) mode, which draws its own
@@ -1069,7 +1071,7 @@ function drawChart() {
     left: 80,
     right: isActualMode ? 90 : 20,
     top: SUN_MOON_BANDS_H + 5,
-    bottom: X_AXIS_LABEL_MARGIN_H + LOW_CALLOUT_OVERFLOW_H
+    bottom: X_AXIS_LABEL_MARGIN_H + 5
   };
   const plotW = W - m.left - m.right;
   const plotH = H - m.top - m.bottom;
@@ -1197,7 +1199,7 @@ function drawChart() {
     ctx.font = '28px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
-    ctx.fillText(label, x, H - X_AXIS_LABEL_MARGIN_H + 12);
+    ctx.fillText(label, x, H - m.bottom);
   }
 
   updateDateDisplay();
@@ -1319,7 +1321,7 @@ function drawNowIndicator() {
 //     on-screen position drifts left of .chart-stack's box — the dominant,
 //     "obvious on iPhone" source of the misalignment.
 //  2. chartRect (getBoundingClientRect()) is the canvas's border-box, but
-//     the 1040x737 bitmap is actually stretched into the content-box (the
+//     the 1040x667 bitmap is actually stretched into the content-box (the
 //     canvas has a 1px border on each side), so using chartRect.width alone
 //     as the scale denominator is off by ~2px — the "subtle even on
 //     desktop" drift.
