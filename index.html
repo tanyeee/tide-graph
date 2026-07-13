@@ -623,10 +623,9 @@ async function initializeData() {
   const currentYear = new Date().getFullYear();
   const manifestYears = await loadManifestYears();
   const candidateYears = new Set(
-    manifestYears.filter(year => year >= currentYear - 1 && year <= currentYear + 1)
+    manifestYears.filter(year => year >= currentYear - 1 && year <= currentYear)
   );
   candidateYears.add(currentYear);
-  candidateYears.add(currentYear + 1);
 
   const results = await Promise.allSettled(
     [...candidateYears].sort((a, b) => a - b).map(year => loadTideYear(year))
