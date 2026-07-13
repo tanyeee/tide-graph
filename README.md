@@ -47,6 +47,6 @@ GitHub Actionsの `Update tide data` workflowが毎月1日に同じ処理とテ�
 - 出典：[気象庁「潮位表 日立」](https://www.data.jma.go.jp/kaiyou/db/tide/suisan/suisan.php?stn=D1)
 - 表示値は天文潮位の予測値であり、気象などの影響を受ける実測潮位とは異なります。
 - 10分刻みの値は、気象庁の毎時潮位をアプリ内で直線補間しています。
-- 潮名は月齢に基づく目安で、気象庁配布データに含まれる値ではありません。
+- 潮名は[日本水路協会 MIRC「科学的な潮名の決め方」](https://www.mirc.jp/online/w/w-tide/knowledge/SN-det.html)に基づき、JST 0時の太陽・月の黄経差から判定しています。
 - 河川水位は[久慈川水位ビューア](https://tanyeee.github.io/kuji-waterlevel/)が公開する国土交通省観測データを読み込みます。
 - 潮位と河川水位は基準面が異なります。右軸の自動フィットは波形と時刻差を見やすくするための表示であり、絶対的な高さの比較には使用できません。

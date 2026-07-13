@@ -77,7 +77,8 @@ function sunCoords(d) {
 
     return {
         ra: atan(cos(e) * sin(L), cos(L)), // 25.6
-        dec: asin(sin(e) * sin(L))         // 25.7
+        dec: asin(sin(e) * sin(L)),        // 25.7
+        longitude: L
     };
 }
 
@@ -386,8 +387,19 @@ function moonCoords(d) {
     return {
         ra: atan(sin(l) * cos(eps) - tan(b) * sin(eps), cos(l)),  // 13.3
         dec: asin(sin(b) * cos(eps) + cos(b) * sin(eps) * sin(l)), // 13.4
-        dist: 385000.56 + sr / 1000  // distance to the Moon in km
+        dist: 385000.56 + sr / 1000, // distance to the Moon in km
+        longitude: l
     };
+}
+
+// Geocentric apparent ecliptic longitude difference (Moon − Sun), normalized
+// to 0..360°. This is the quantity used by MIRC/JHA's scientific tide-name
+// convention, evaluated by the caller at JST 00:00.
+export function getSunMoonElongation(date = new Date()) {
+    const d = toDaysTT(toDays(date));
+    const sun = sunCoords(d);
+    const moon = moonCoords(d);
+    return ((moon.longitude - sun.longitude) / rad % 360 + 360) % 360;
 }
 
 export function getMoonPosition(date, lat, lng) {
