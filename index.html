@@ -122,9 +122,9 @@
   }
   .date-nav > button .nav-arrow { font-size:20px; line-height:1; }
   .nav-step { font-size:10px; font-weight:600; line-height:1.15; }
-  /* The real <input type="date"> retains the date value, min/max, and change
-     handling. The visible date button explicitly opens its native picker so
-     desktop browsers do not depend on clicks landing on a hidden input. */
+  /* Desktop uses the visible button's showPicker() call. Touch-first devices
+     instead receive the real date input directly (see the capability query
+     below), which is required by iOS Safari's native picker. */
   .date-display-wrap {
     position:relative; min-width:0; align-self:stretch;
     display:flex; align-items:center; justify-content:center; cursor:pointer;
@@ -137,6 +137,13 @@
   .date-nav input[type="date"] {
     position:absolute; inset:0; width:100%; height:100%; margin:0; padding:0; border:0;
     opacity:0; pointer-events:none; -webkit-appearance:none; appearance:none;
+  }
+  @media (hover: none) and (pointer: coarse) {
+    /* iOS Safari permits its date sheet only from a direct tap on the native
+       control. Keep the button for its label/value, but route the touch to
+       the transparent input layered above it. */
+    .date-display { pointer-events:none; }
+    .date-nav input[type="date"] { pointer-events:auto; cursor:pointer; }
   }
   button {
     appearance:none; border:1px solid var(--border); background:var(--button-bg); color:var(--button-text);
