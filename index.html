@@ -227,9 +227,12 @@
   .legend-symbol.now::after {
     content:""; position:relative; width:.68em; height:.68em; border-radius:50%; background:var(--now);
   }
-  .chart-stack { position:relative; overflow:hidden; border-radius:16px; margin-bottom:16px; }
+  .chart-stack {
+    position:relative; width:calc(100% + 48px); margin:0 -24px 16px;
+    overflow:hidden;
+  }
   #chart {
-    width:100%; height:auto; display:block; border:1px solid var(--border); border-radius:16px; background:var(--chart-bg);
+    width:100%; height:auto; display:block; border:0; border-radius:0; background:var(--chart-bg);
     touch-action:manipulation;
   }
   .now-pulse {
@@ -267,6 +270,7 @@
   @media (max-width: 780px) {
     body { padding:12px; }
     .card { padding:0; border-radius:0; }
+    .chart-stack { width:calc(100% + 24px); margin-left:-12px; margin-right:-12px; }
     .meta { grid-template-columns:repeat(3,minmax(0,1fr)); }
     .range-row { width:100%; justify-content:space-between; }
     #selectedHeight { font-size:22px; }
