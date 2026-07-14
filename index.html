@@ -255,9 +255,14 @@
     display:grid; grid-template-columns:76px minmax(0, 1fr) 76px; align-items:center; gap:20px;
   }
   .chart-meta {
-    position:absolute; left:76px; right:76px; bottom:124px; z-index:2;
+    position:absolute; left:76px; right:76px; bottom:112px; z-index:2;
     margin:0;
   }
+  .chart-meta .pill {
+    background:rgba(7,30,54,.72); border-color:rgba(255,255,255,.4);
+    padding:6px 10px;
+  }
+  .chart-meta .pill .k { margin-bottom:2px; }
   .chart-step-button {
     min-height:76px; padding:6px 0; border-radius:20px;
     border-color:rgba(255,255,255,.4); background:rgba(7,30,54,.72); color:#fff;
@@ -275,7 +280,7 @@
     body { padding:12px; }
     .card { padding:0; border-radius:0; }
     .chart-stack { width:calc(100% + 24px); margin-left:-12px; margin-right:-12px; }
-    .chart-meta { left:16px; right:16px; bottom:80px; }
+    .chart-meta { left:16px; right:16px; bottom:74px; }
     .meta { grid-template-columns:repeat(3,minmax(0,1fr)); }
     .range-row { width:100%; justify-content:space-between; }
     #selectedHeight { font-size:22px; }
@@ -1145,10 +1150,10 @@ function drawChart() {
   // right-side axis labels (m単位); 相対 mode keeps right:20 and draws no
   // right-axis labels, exactly as before.
   // The value cards are HTML overlaid on the canvas. Keep the x-axis labels
-  // 30 CSS pixels above them regardless of the canvas's rendered scale.
+  // 15 CSS pixels above them regardless of the canvas's rendered scale.
   const renderedScale = chart.clientWidth / W || 1;
   const labelTopCss = chartMetaEl
-    ? chartMetaEl.offsetTop - 30 - 28 * renderedScale
+    ? chartMetaEl.offsetTop - 15 - 28 * renderedScale
     : (H - 330) * renderedScale;
   const chartBottom = Math.max(180, H - labelTopCss / renderedScale + 5);
   const m = {
