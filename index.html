@@ -63,7 +63,7 @@
     background:transparent; border:0; border-radius:0;
     padding:0; box-shadow:none;
   }
-  h1 { margin:0 0 4px; font-size:clamp(24px,3vw,34px); }
+  h1 { margin:0 0 4px; font-size:clamp(24px,3vw,34px); text-align:center; }
   .sub, .legend, .note { color:var(--muted); font-size:14px; line-height:1.7; }
   .sub { margin-top:18px; }
   .legend { font-size:14px; margin-top:16px; }
@@ -259,7 +259,7 @@
   .chart-step-button .nav-arrow { font-size:40px; line-height:1; }
   .chart-control-legend {
     display:grid; grid-template-columns:repeat(2, max-content); justify-content:center; column-gap:24px; row-gap:10px;
-    color:rgba(255,255,255,.88); font-size:18px; line-height:1.1;
+    color:rgba(255,255,255,.88); font-size:20px; line-height:1.1;
   }
   .chart-legend-item { display:flex; align-items:center; white-space:nowrap; }
   .chart-control-legend .swatch { margin-bottom:0; }
@@ -310,7 +310,7 @@
     .chart-step-button { min-height:56px; border-radius:16px; }
     .chart-step-button .nav-arrow { font-size:30px; }
     .chart-step-button .nav-step { font-size:10px; }
-    .chart-control-legend { grid-template-columns:repeat(2, max-content); column-gap:10px; row-gap:7px; font-size:12px; }
+    .chart-control-legend { grid-template-columns:repeat(2, max-content); column-gap:10px; row-gap:7px; font-size:13px; }
     .chart-control-legend .swatch { margin-right:.25em; }
   }
 </style>
@@ -1142,7 +1142,7 @@ function drawChart() {
     top: SUN_MOON_BANDS_H + 30,
     // X-axis labels, then a dedicated lower blue panel for the in-chart
     // legend and 10-minute controls.
-    bottom: 180
+    bottom: 205
   };
   const plotW = W - m.left - m.right;
   const plotH = H - m.top - m.bottom;
