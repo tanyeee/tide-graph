@@ -251,11 +251,11 @@
     .now-pulse { display:none !important; animation:none; }
   }
   .chart-controls {
-    position:absolute; left:20px; right:20px; bottom:24px; z-index:2;
+    position:absolute; left:20px; right:20px; bottom:48px; z-index:2;
     display:grid; grid-template-columns:76px minmax(0, 1fr) 76px; align-items:center; gap:20px;
   }
   .chart-meta {
-    position:absolute; left:76px; right:76px; bottom:112px; z-index:2;
+    position:absolute; left:76px; right:76px; bottom:136px; z-index:2;
     margin:0;
   }
   .chart-meta .pill {
@@ -276,11 +276,16 @@
   .chart-legend-item { display:flex; align-items:center; white-space:nowrap; }
   .chart-control-legend .swatch { margin-bottom:0; }
   .chart-control-legend .legend-symbol { margin-bottom:0; }
+  .chart-interaction-hint {
+    position:absolute; left:12px; right:12px; bottom:14px; z-index:2;
+    color:rgba(255,255,255,.82); font-size:12px; line-height:1.2; text-align:center;
+    white-space:nowrap;
+  }
   @media (max-width: 780px) {
     body { padding:12px; }
     .card { padding:0; border-radius:0; }
     .chart-stack { width:calc(100% + 24px); margin-left:-12px; margin-right:-12px; }
-    .chart-meta { left:16px; right:16px; bottom:74px; }
+    .chart-meta { left:16px; right:16px; bottom:100px; }
     .meta { grid-template-columns:repeat(3,minmax(0,1fr)); }
     .range-row { width:100%; justify-content:space-between; }
     #selectedHeight { font-size:22px; }
@@ -320,12 +325,13 @@
     .pill { min-width:0; padding:10px; }
     .pill .v { font-size:16px; white-space:nowrap; }
     #selectedHeight { font-size:20px; }
-    .chart-controls { left:10px; right:10px; bottom:12px; grid-template-columns:56px minmax(0,1fr) 56px; gap:6px; }
+    .chart-controls { left:10px; right:10px; bottom:38px; grid-template-columns:56px minmax(0,1fr) 56px; gap:6px; }
     .chart-step-button { min-height:56px; border-radius:16px; }
     .chart-step-button .nav-arrow { font-size:30px; }
     .chart-step-button .nav-step { font-size:10px; }
     .chart-control-legend { grid-template-columns:repeat(2, max-content); column-gap:10px; row-gap:7px; font-size:13px; }
     .chart-control-legend .swatch { margin-right:.25em; }
+    .chart-interaction-hint { bottom:10px; font-size:10px; }
   }
 </style>
 </head>
@@ -375,6 +381,7 @@
         </div>
         <button id="btnNext10" class="chart-step-button" type="button" aria-label="10分後"><span class="nav-step">10分</span><span class="nav-arrow">&gt;</span></button>
       </div>
+      <div class="chart-interaction-hint">グラフ内をタップまたはクリックすると好きな時刻を選択できます。</div>
     </div>
 
     <div class="range-row">
