@@ -1140,9 +1140,9 @@ function drawChart() {
     right: isActualMode ? 90 : 20,
     // Keep a deliberate 30px gap between the sun/moon bars and the plot.
     top: SUN_MOON_BANDS_H + 30,
-    // X-axis labels, then a dedicated lower blue panel for the in-chart
-    // legend and 10-minute controls.
-    bottom: 205
+    // X-axis labels, a 30px visual gap, then the dedicated lower blue panel
+    // for the in-chart legend and 10-minute controls.
+    bottom: 245
   };
   const plotW = W - m.left - m.right;
   const plotH = H - m.top - m.bottom;
