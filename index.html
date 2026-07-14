@@ -118,9 +118,9 @@
   }
   .date-nav-info-row {
     display:grid; grid-template-columns:var(--date-nav-cols); gap:var(--date-nav-gap);
-    justify-content:start; margin-bottom:-4px;
+    position:relative; min-height:44px; justify-content:start; margin-bottom:-4px;
   }
-  .date-info-anchor { grid-column:2; position:relative; display:flex; justify-content:flex-end; }
+  .date-info-anchor { position:absolute; top:10px; }
   .date-info-btn {
     flex:0 0 auto; width:44px; height:44px; padding:0;
     border:0; background:transparent; cursor:pointer;
@@ -467,6 +467,8 @@ const dateInput = document.getElementById('dateInput');
 const dateDisplayEl = document.getElementById('dateDisplay');
 const dateInfoButton = document.getElementById('dateInfoButton');
 const dateInfoPopover = document.getElementById('dateInfoPopover');
+const dateNavFieldEl = document.querySelector('.date-nav-field');
+const dateInfoAnchorEl = document.querySelector('.date-info-anchor');
 const btn1 = document.getElementById('btn1');
 const btn2 = document.getElementById('btn2');
 const btnPrev1 = document.getElementById('btnPrev1');
@@ -719,6 +721,16 @@ function addDays(dateStr, add) {
 
 // Updates the central date plus its tide name, then gives each adjacent-day
 // button the concrete date it will select.
+function positionDateInfoButton() {
+  if (!dateNavFieldEl || !dateInfoAnchorEl) return;
+  const fieldRect = dateNavFieldEl.getBoundingClientRect();
+  const dateRect = dateDisplayEl.getBoundingClientRect();
+  // The clickable target is 44px wide while the visible icon is 20px wide.
+  // Put the visible icon 5px to the right of the date itself.
+  const left = dateRect.right - fieldRect.left - 7;
+  dateInfoAnchorEl.style.left = `${Math.max(0, Math.min(left, fieldRect.width - 44))}px`;
+}
+
 function updateDateDisplay() {
   if (!dateInput.value) return;
   dateDisplayEl.textContent = shortJpDate(dateInput.value);
@@ -733,6 +745,7 @@ function updateDateDisplay() {
   btnNext1.disabled = !hasNext;
   btnNext1.textContent = hasNext ? `${new Date(next + 'T00:00:00').getDate()}日＞` : '＞';
   btnNext1.setAttribute('aria-label', hasNext ? `翌日（${shortJpDate(next)}）` : '翌日（利用可能なデータなし）');
+  positionDateInfoButton();
 }
 
 function openDatePicker() {
@@ -1627,6 +1640,7 @@ document.addEventListener('visibilitychange', syncNowMarkerEffects);
 window.addEventListener('resize', () => {
   const selected = currentSeries[currentSelectedIndex];
   if (selected) drawSelection(selected, false);
+  positionDateInfoButton();
   updateNowPulseElement();
 });
 
