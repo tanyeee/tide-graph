@@ -110,13 +110,24 @@
   }
   .refresh-wrap { margin-left:auto; }
   .refresh-btn { min-width:64px; height:44px; border-radius:14px; font-size:22px; font-weight:700; padding:0 14px; }
-  /* position:relative anchors .date-info-popover; the info row/button live
-     above the date-nav grid (not inside it), so the grid's own columns are
-     never touched by this. Right-aligning the info row puts the button at
-     the same right edge the popover also anchors to, and keeps it reachable
-     by a right-handed thumb on mobile. */
-  .date-nav-field { position:relative; width:min(100%, 520px); }
-  .date-nav-info-row { display:flex; justify-content:flex-end; margin-bottom:-4px; }
+  /* .date-nav-info-row mirrors .date-nav's own grid-template-columns/gap
+     (via the shared --date-nav-cols/--date-nav-gap custom properties, kept
+     in sync at every breakpoint below) so its 3rd cell always lines up
+     exactly with the date-display column, regardless of how wide
+     .date-nav-field itself ends up or how .date-nav packs its tracks within
+     it. This lets the info button sit right above the date text's own
+     column (near its right edge, by the 曜日 in parentheses) instead of the
+     field's outer right edge, without touching .date-nav itself. */
+  .date-nav-field {
+    width:min(100%, 520px);
+    --date-nav-cols:56px 56px 220px 56px 56px;
+    --date-nav-gap:8px;
+  }
+  .date-nav-info-row {
+    display:grid; grid-template-columns:var(--date-nav-cols); gap:var(--date-nav-gap);
+    justify-content:start; margin-bottom:-4px;
+  }
+  .date-info-anchor { grid-column:3; position:relative; display:flex; justify-content:flex-end; }
   .date-info-btn {
     flex:0 0 auto; width:44px; height:44px; padding:0;
     border:0; background:transparent; cursor:pointer;
@@ -134,10 +145,14 @@
   .date-info-btn[aria-expanded="true"] .date-info-icon {
     border-color:var(--accent); color:var(--accent); background:var(--accent-soft);
   }
+  /* Centered under the button (rather than right/left-anchored) so it stays
+     clear of the viewport edge whichever side the button ends up closer to
+     — see the position-tuning commit's write-up for the 375px/1100px
+     coordinate check that motivated centering over edge-anchoring. */
   .date-info-popover {
-    position:absolute; top:100%; right:0; z-index:5; margin-top:4px;
-    width:max-content; max-width:min(280px, calc(100vw - 48px));
-    padding:10px 14px; border-radius:12px;
+    position:absolute; top:100%; left:50%; transform:translateX(-50%); z-index:5; margin-top:4px;
+    width:max-content; max-width:min(220px, calc(100vw - 32px));
+    padding:10px 14px; border-radius:12px; text-align:center;
     background:var(--pill); border:1px solid var(--border); box-shadow:var(--shadow);
     color:var(--text); font-size:13px; line-height:1.6;
   }
@@ -282,12 +297,15 @@
     .meta { grid-template-columns:repeat(3,minmax(0,1fr)); }
     .range-row { width:100%; justify-content:space-between; }
     #selectedHeight { font-size:22px; }
+    .date-nav-field { --date-nav-cols:52px 52px 180px 52px 52px; --date-nav-gap:6px; }
     .date-nav { grid-template-columns:52px 52px 180px 52px 52px; gap:6px; }
     .date-nav > button { min-width:52px; }
     .date-nav > button .nav-arrow { font-size:18px; }
   }
   @media (max-width: 560px) {
     h1 { font-size:26px; white-space:nowrap; }
+    .date-nav-field { --date-nav-cols:44px 44px minmax(0,1fr) 44px 44px; --date-nav-gap:4px; }
+    .date-nav-info-row { width:100%; }
     .date-nav { grid-template-columns:44px 44px minmax(0,1fr) 44px 44px; gap:4px; width:100%; }
     .date-nav > button { min-width:0; width:44px; padding:8px 2px; }
     .date-nav > button .nav-step { font-size:9px; }
@@ -336,9 +354,14 @@
     <div class="controls">
       <div class="field date-nav-field">
         <div class="date-nav-info-row">
-          <button id="dateInfoButton" class="date-info-btn" type="button" aria-label="日付変更の説明" aria-expanded="false" aria-describedby="dateInfoPopover">
-            <span class="date-info-icon" aria-hidden="true">ⓘ</span>
-          </button>
+          <div class="date-info-anchor">
+            <button id="dateInfoButton" class="date-info-btn" type="button" aria-label="日付変更の説明" aria-expanded="false" aria-describedby="dateInfoPopover">
+              <span class="date-info-icon" aria-hidden="true">ⓘ</span>
+            </button>
+            <div id="dateInfoPopover" class="date-info-popover" role="tooltip" hidden>
+              日付をクリックまたはタップするとカレンダーから変更可能
+            </div>
+          </div>
         </div>
         <div class="date-nav">
           <button id="btnPrev7" type="button" aria-label="1週間前"><span class="nav-step">1週間</span><span class="nav-arrow">&lt;&lt;</span></button>
@@ -349,9 +372,6 @@
           </div>
           <button id="btnNext1" type="button" aria-label="1日後"><span class="nav-step">1日</span><span class="nav-arrow">&gt;</span></button>
           <button id="btnNext7" type="button" aria-label="1週間後"><span class="nav-step">1週間</span><span class="nav-arrow">&gt;&gt;</span></button>
-        </div>
-        <div id="dateInfoPopover" class="date-info-popover" role="tooltip" hidden>
-          日付をクリックまたはタップするとカレンダーから変更可能
         </div>
       </div>
     </div>
