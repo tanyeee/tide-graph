@@ -110,24 +110,18 @@
   }
   .refresh-wrap { margin-left:auto; }
   .refresh-btn { min-width:64px; height:44px; border-radius:14px; font-size:22px; font-weight:700; padding:0 14px; }
-  /* .date-nav-info-row mirrors .date-nav's own grid-template-columns/gap
-     (via the shared --date-nav-cols/--date-nav-gap custom properties, kept
-     in sync at every breakpoint below) so its 3rd cell always lines up
-     exactly with the date-display column, regardless of how wide
-     .date-nav-field itself ends up or how .date-nav packs its tracks within
-     it. This lets the info button sit right above the date text's own
-     column (near its right edge, by the 曜日 in parentheses) instead of the
-     field's outer right edge, without touching .date-nav itself. */
+  /* The explanation icon shares the date navigation's three columns, so it
+     stays aligned with the central date/tide control at every breakpoint. */
   .date-nav-field {
     width:min(100%, 520px);
-    --date-nav-cols:56px 56px 220px 56px 56px;
-    --date-nav-gap:8px;
+    --date-nav-cols:88px minmax(0, 1fr) 88px;
+    --date-nav-gap:12px;
   }
   .date-nav-info-row {
     display:grid; grid-template-columns:var(--date-nav-cols); gap:var(--date-nav-gap);
     justify-content:start; margin-bottom:-4px;
   }
-  .date-info-anchor { grid-column:3; position:relative; display:flex; justify-content:flex-end; }
+  .date-info-anchor { grid-column:2; position:relative; display:flex; justify-content:flex-end; }
   .date-info-btn {
     flex:0 0 auto; width:44px; height:44px; padding:0;
     border:0; background:transparent; cursor:pointer;
@@ -157,16 +151,12 @@
     color:var(--text); font-size:13px; line-height:1.6;
   }
   .date-info-popover[hidden] { display:none; }
-  .date-nav { display:grid; grid-template-columns:56px 56px 220px 56px 56px; align-items:center; gap:8px; justify-content:start; }
-  /* Nav buttons (date-nav and seekbar) show a small step-size label above the
-     arrow glyph, stacked via flex-column, so the arrow's own font-size lives
-     on .nav-arrow instead of the button element directly. */
+  .date-nav { display:grid; grid-template-columns:var(--date-nav-cols); align-items:center; gap:var(--date-nav-gap); justify-content:start; }
+  /* Date navigation buttons name their destination date directly. */
   .date-nav > button {
-    min-width:52px; padding:8px 6px; font-weight:700; border-radius:14px;
-    display:flex; flex-direction:column; align-items:center; justify-content:center;
-    gap:1px; line-height:1.1;
+    min-width:0; min-height:48px; padding:8px 6px; font-weight:700; border-radius:14px;
+    white-space:nowrap;
   }
-  .date-nav > button .nav-arrow { font-size:20px; line-height:1; }
   .nav-step { font-size:10px; font-weight:600; line-height:1.15; }
   /* Desktop uses the visible button's showPicker() call. Touch-first devices
      instead receive the real date input directly (see the capability query
@@ -177,9 +167,11 @@
   }
   .date-display {
     appearance:none; border:0; background:transparent; padding:0;
-    font:inherit; font-size:20px; font-weight:800; color:var(--text); white-space:nowrap;
-    cursor:pointer; text-align:center; width:100%; height:100%;
+    font:inherit; cursor:pointer; text-align:center; width:100%; height:100%;
+    display:flex; align-items:center; justify-content:center; gap:12px; white-space:nowrap;
   }
+  .date-display-value { font-size:20px; font-weight:800; color:var(--text); }
+  .date-tide-name { color:var(--highlight); font-size:24px; font-weight:800; letter-spacing:.08em; line-height:1.1; }
   .date-nav input[type="date"] {
     position:absolute; inset:0; width:100%; height:100%; margin:0; padding:0; border:0;
     opacity:0; pointer-events:none; -webkit-appearance:none; appearance:none;
@@ -268,15 +260,7 @@
   .seekbar button .nav-arrow { font-size:34px; line-height:1; }
   .seekbar button.double .nav-arrow { font-size:28px; }
   .seekbar button.double { font-weight:800; }
-  .tide-name {
-    text-align:center;
-    font-size:32px;
-    font-weight:800;
-    color:var(--highlight);
-    letter-spacing:.08em;
-    line-height:1.1;
-    white-space:nowrap;
-  }
+  .seek-spacer { min-width:0; }
   @media (max-width: 780px) {
     body { padding:12px; }
     .card { padding:14px; border-radius:14px; }
@@ -297,19 +281,17 @@
     .meta { grid-template-columns:repeat(3,minmax(0,1fr)); }
     .range-row { width:100%; justify-content:space-between; }
     #selectedHeight { font-size:22px; }
-    .date-nav-field { --date-nav-cols:52px 52px 180px 52px 52px; --date-nav-gap:6px; }
-    .date-nav { grid-template-columns:52px 52px 180px 52px 52px; gap:6px; }
-    .date-nav > button { min-width:52px; }
-    .date-nav > button .nav-arrow { font-size:18px; }
+    .date-nav-field { --date-nav-cols:76px minmax(0, 1fr) 76px; --date-nav-gap:8px; }
   }
   @media (max-width: 560px) {
     h1 { font-size:26px; white-space:nowrap; }
-    .date-nav-field { --date-nav-cols:44px 44px minmax(0,1fr) 44px 44px; --date-nav-gap:4px; }
+    .date-nav-field { --date-nav-cols:64px minmax(0,1fr) 64px; --date-nav-gap:4px; }
     .date-nav-info-row { width:100%; }
-    .date-nav { grid-template-columns:44px 44px minmax(0,1fr) 44px 44px; gap:4px; width:100%; }
-    .date-nav > button { min-width:0; width:44px; padding:8px 2px; }
-    .date-nav > button .nav-step { font-size:9px; }
-    .date-display { font-size:18px; }
+    .date-nav { width:100%; }
+    .date-nav > button { min-height:44px; padding:8px 2px; font-size:13px; }
+    .date-display { gap:7px; }
+    .date-display-value { font-size:18px; }
+    .date-tide-name { font-size:21px; }
     /* Keep all four river controls in one row on phone widths.  Grid makes
        the intended order explicit: range, mode, station, then refresh.
        The station column alone absorbs the remaining width, so it never
@@ -340,7 +322,6 @@
     .seekbar button .nav-arrow { font-size:28px; }
     .seekbar button.double .nav-arrow { font-size:24px; }
     .seekbar button .nav-step { font-size:9px; }
-    .tide-name { font-size:24px; }
     .legend.chart-legend { font-size:12px; }
     .legend.chart-legend .swatch { margin-right:.25em; }
   }
@@ -364,14 +345,12 @@
           </div>
         </div>
         <div class="date-nav">
-          <button id="btnPrev7" type="button" aria-label="1週間前"><span class="nav-step">1週間</span><span class="nav-arrow">&lt;&lt;</span></button>
-          <button id="btnPrev1" type="button" aria-label="1日前"><span class="nav-step">1日</span><span class="nav-arrow">&lt;</span></button>
+          <button id="btnPrev1" type="button" aria-label="前日" disabled>＜</button>
           <div class="date-display-wrap">
-            <button id="datePickerButton" class="date-display" type="button" aria-label="日付を選択" disabled>-</button>
+            <button id="datePickerButton" class="date-display" type="button" aria-label="日付を選択" disabled><span id="dateDisplay" class="date-display-value">-</span><span id="tideName" class="date-tide-name" aria-label="潮名">-</span></button>
             <input id="dateInput" type="date" disabled tabindex="-1" aria-hidden="true">
           </div>
-          <button id="btnNext1" type="button" aria-label="1日後"><span class="nav-step">1日</span><span class="nav-arrow">&gt;</span></button>
-          <button id="btnNext7" type="button" aria-label="1週間後"><span class="nav-step">1週間</span><span class="nav-arrow">&gt;&gt;</span></button>
+          <button id="btnNext1" type="button" aria-label="翌日" disabled>＞</button>
         </div>
       </div>
     </div>
@@ -394,7 +373,7 @@
     <div class="seekbar">
       <button id="btnPrev60" class="double" type="button" aria-label="1時間前"><span class="nav-step">1時間</span><span class="nav-arrow">&lt;&lt;</span></button>
       <button id="btnPrev10" type="button" aria-label="10分前"><span class="nav-step">10分</span><span class="nav-arrow">&lt;</span></button>
-      <div id="tideName" class="tide-name" aria-label="潮名">-</div>
+      <div class="seek-spacer" aria-hidden="true"></div>
       <button id="btnNext10" type="button" aria-label="10分後"><span class="nav-step">10分</span><span class="nav-arrow">&gt;</span></button>
       <button id="btnNext60" class="double" type="button" aria-label="1時間後"><span class="nav-step">1時間</span><span class="nav-arrow">&gt;&gt;</span></button>
     </div>
@@ -484,14 +463,13 @@ const ctx = chart.getContext('2d');
 const nowPulseEl = document.getElementById('nowPulse');
 const datePickerButton = document.getElementById('datePickerButton');
 const dateInput = document.getElementById('dateInput');
+const dateDisplayEl = document.getElementById('dateDisplay');
 const dateInfoButton = document.getElementById('dateInfoButton');
 const dateInfoPopover = document.getElementById('dateInfoPopover');
 const btn1 = document.getElementById('btn1');
 const btn2 = document.getElementById('btn2');
-const btnPrev7 = document.getElementById('btnPrev7');
 const btnPrev1 = document.getElementById('btnPrev1');
 const btnNext1 = document.getElementById('btnNext1');
-const btnNext7 = document.getElementById('btnNext7');
 const btnPrev60 = document.getElementById('btnPrev60');
 const btnPrev10 = document.getElementById('btnPrev10');
 const btnNext10 = document.getElementById('btnNext10');
@@ -728,18 +706,34 @@ function jpDate(dateStr) {
   return `${d.getFullYear()}/${pad(d.getMonth()+1)}/${pad(d.getDate())}（${w}）`;
 }
 
+function shortJpDate(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00');
+  const w = ['日','月','火','水','木','金','土'][d.getDay()];
+  return `${d.getMonth() + 1}月${d.getDate()}日（${w}）`;
+}
+
 function addDays(dateStr, add) {
   const d = new Date(dateStr + 'T00:00:00');
   d.setDate(d.getDate() + add);
   return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
 }
 
-// Renders the day-with-weekday label shown over the real (transparent)
-// <input type="date"> in the date-nav row. Always shows the selected start
-// date only, even in 2-day view (the second day isn't shown here).
+// Updates the central date plus its tide name, then gives each adjacent-day
+// button the concrete date it will select.
 function updateDateDisplay() {
   if (!dateInput.value) return;
-  datePickerButton.textContent = jpDate(dateInput.value);
+  dateDisplayEl.textContent = shortJpDate(dateInput.value);
+  const previous = addDays(dateInput.value, -1);
+  const next = addDays(dateInput.value, 1);
+  const hasPrevious = !!dataMap[previous];
+  const hasNext = !!dataMap[next];
+
+  btnPrev1.disabled = !hasPrevious;
+  btnPrev1.textContent = hasPrevious ? `＜${new Date(previous + 'T00:00:00').getDate()}日` : '＜';
+  btnPrev1.setAttribute('aria-label', hasPrevious ? `前日（${shortJpDate(previous)}）` : '前日（利用可能なデータなし）');
+  btnNext1.disabled = !hasNext;
+  btnNext1.textContent = hasNext ? `${new Date(next + 'T00:00:00').getDate()}日＞` : '＞';
+  btnNext1.setAttribute('aria-label', hasNext ? `翌日（${shortJpDate(next)}）` : '翌日（利用可能なデータなし）');
 }
 
 function openDatePicker() {
@@ -1563,10 +1557,8 @@ function moveSelection(step) {
 
 
 
-btnPrev7.addEventListener('click', () => shiftDateBy(-7));
 btnPrev1.addEventListener('click', () => shiftDateBy(-1));
 btnNext1.addEventListener('click', () => shiftDateBy(1));
-btnNext7.addEventListener('click', () => shiftDateBy(7));
 btnPrev60.addEventListener('click', () => moveSelection(-6));
 btnPrev10.addEventListener('click', () => moveSelection(-1));
 btnNext10.addEventListener('click', () => moveSelection(1));
