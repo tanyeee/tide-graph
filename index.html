@@ -64,7 +64,6 @@
     padding:0; box-shadow:none;
   }
   h1 { margin:0 0 4px; font-size:clamp(24px,3vw,34px); }
-  .app-summary { color:var(--muted); font-size:14px; line-height:1.7; margin:0 0 14px; white-space:nowrap; }
   .sub, .legend, .note { color:var(--muted); font-size:14px; line-height:1.7; }
   .sub { margin-top:18px; }
   .legend { font-size:14px; margin-top:16px; }
@@ -228,7 +227,7 @@
   .legend-symbol.now::after {
     content:""; position:relative; width:.68em; height:.68em; border-radius:50%; background:var(--now);
   }
-  .chart-stack { position:relative; overflow:hidden; border-radius:16px; }
+  .chart-stack { position:relative; overflow:hidden; border-radius:16px; margin-bottom:16px; }
   #chart {
     width:100%; height:auto; display:block; border:1px solid var(--border); border-radius:16px; background:var(--chart-bg);
     touch-action:manipulation;
@@ -274,8 +273,7 @@
     .date-nav-field { --date-nav-cols:76px minmax(0, 1fr) 76px; --date-nav-gap:8px; }
   }
   @media (max-width: 560px) {
-    h1 { font-size:26px; white-space:nowrap; }
-    .app-summary { font-size:13px; }
+    h1 { font-size:24px; white-space:nowrap; }
     .date-nav-field { --date-nav-cols:64px minmax(0,1fr) 64px; --date-nav-gap:4px; }
     .date-nav-info-row { width:100%; }
     .date-nav { width:100%; }
@@ -320,8 +318,7 @@
 <body>
 <div class="wrap">
   <div class="card">
-    <h1>日立 潮位グラフ</h1>
-    <div class="app-summary">潮位と河川水位の時刻差を比べるグラフです。</div>
+    <h1>日立 潮位＆河川水位グラフ</h1>
 
     <div class="controls">
       <div class="field date-nav-field">
@@ -1145,7 +1142,7 @@ function drawChart() {
     top: SUN_MOON_BANDS_H + 30,
     // X-axis labels, then a dedicated lower blue panel for the in-chart
     // legend and 10-minute controls.
-    bottom: 300
+    bottom: 180
   };
   const plotW = W - m.left - m.right;
   const plotH = H - m.top - m.bottom;
