@@ -402,8 +402,8 @@
         </select>
       </div>
       <div class="field river-mode-field">
-        <label>水位モード</label>
-        <div class="toggle" role="group" aria-label="水位モード">
+        <label>河川水位モード</label>
+        <div class="toggle" role="group" aria-label="河川水位モード">
           <button id="riverModeRelative" class="active" type="button">相対</button>
           <button id="riverModeActual" type="button">実水位</button>
         </div>
@@ -414,7 +414,7 @@
       </div>
     </div>
 
-    <div id="riverFootnoteText" class="river-footnote">※1 河川水位は、潮位との時刻差を比較しやすくするためグラフ上で縦方向に自動調整した表示値です。実際の河川水位を示すものではありません。参考指標として利用ください。</div>
+    <div id="riverFootnoteText" class="river-footnote">※1 河川水位モード<br>【相対水位】河川水位の変化が海洋潮位に合うよう自動調整した参考値です。河川の潮位変化が海洋潮位に対してどの程度遅れているかを確認するのに適しています。<br>【実水位】国土交通省が公開している河川水位データの値を表示します。河川が増水しているかどうかを確認するのに適しています。なお、観測地点によっては、平常時でも水位がマイナスの値を示す場合があります。<br>【河川水位観測地点】久慈川水系および涸沼・那珂川水系の汽水域にある観測地点から、表示する地点を選択できます。<br>【更新】更新ボタンを押すと現在時刻に戻り、最新のデータを取得します。</div>
     <div id="dataStatus" class="note data-status" role="status" aria-live="polite">
       潮位データを読み込んでいます…
     </div>
@@ -540,8 +540,8 @@ function updateRiverModeUI() {
   const isActual = riverDisplayMode === 'actual';
   riverModeRelativeBtn.classList.toggle('active', !isActual);
   riverModeActualBtn.classList.toggle('active', isActual);
-  riverFootnoteMarkEl.style.display = isActual ? 'none' : '';
-  riverFootnoteTextEl.style.display = isActual ? 'none' : '';
+  riverFootnoteMarkEl.style.display = '';
+  riverFootnoteTextEl.style.display = '';
 }
 
 function setRiverDisplayMode(mode) {
