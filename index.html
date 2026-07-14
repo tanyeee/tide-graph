@@ -63,7 +63,8 @@
     background:var(--card); border:1px solid var(--border); border-radius:18px;
     padding:20px; box-shadow:var(--shadow);
   }
-  h1 { margin:0 0 18px; font-size:clamp(24px,3vw,34px); }
+  h1 { margin:0 0 4px; font-size:clamp(24px,3vw,34px); }
+  .app-summary { color:var(--muted); font-size:14px; line-height:1.7; margin:0 0 14px; white-space:nowrap; }
   .sub, .legend, .note { color:var(--muted); font-size:14px; line-height:1.7; }
   .sub { margin-top:18px; }
   .legend { font-size:14px; margin-top:16px; }
@@ -285,6 +286,7 @@
   }
   @media (max-width: 560px) {
     h1 { font-size:26px; white-space:nowrap; }
+    .app-summary { font-size:13px; }
     .date-nav-field { --date-nav-cols:64px minmax(0,1fr) 64px; --date-nav-gap:4px; }
     .date-nav-info-row { width:100%; }
     .date-nav { width:100%; }
@@ -331,6 +333,7 @@
 <div class="wrap">
   <div class="card">
     <h1>日立 潮位グラフ</h1>
+    <div class="app-summary">潮位と河川水位の時刻差を比べるグラフです。</div>
 
     <div class="controls">
       <div class="field date-nav-field">
@@ -416,15 +419,16 @@
     </div>
 
     <div id="riverFootnoteText" class="river-footnote">※1 河川水位は、潮位との時刻差を比較しやすくするためグラフ上で縦方向に自動調整した表示値です。実際の河川水位を示すものではありません。参考指標として利用ください。</div>
-    <div class="sub">日付を選ぶと、1日または2日分の潮位変動と河川水位を表示できます。グラフをクリックまたはタップすると、その時刻の値を表示します。</div>
-    <div class="legend">
-      潮位の10分値は気象庁の毎時潮位から直線補間した天文潮位です。<br>
-      出典：<a href="https://www.data.jma.go.jp/kaiyou/db/tide/suisan/suisan.php?stn=D1" target="_blank" rel="noopener noreferrer">気象庁「潮位表 日立」</a>、<a href="https://www.mirc.jp/online/w/w-tide/knowledge/SN-det.html" target="_blank" rel="noopener noreferrer">日本水路協会 MIRC「科学的な潮名の決め方」</a>、<a href="https://tanyeee.github.io/kuji-waterlevel/" target="_blank" rel="noopener noreferrer">国土交通省データを利用した久慈川水位ビューア</a>
-    </div>
     <div id="dataStatus" class="note data-status" role="status" aria-live="polite">
       潮位データを読み込んでいます…
     </div>
     <div id="riverStatus" class="note river-status" role="status" aria-live="polite"></div>
+    <div class="legend">
+      出典<br>
+      潮位：<a href="https://www.data.jma.go.jp/kaiyou/db/tide/suisan/suisan.php?stn=D1" target="_blank" rel="noopener noreferrer">気象庁「潮位表 日立」</a><br>
+      潮名：<a href="https://www.mirc.jp/online/w/w-tide/knowledge/SN-det.html" target="_blank" rel="noopener noreferrer">日本水路協会 MIRC「科学的な潮名の決め方」</a><br>
+      水位：<a href="https://tanyeee.github.io/kuji-waterlevel/" target="_blank" rel="noopener noreferrer">国土交通省データを利用した久慈川水位ビューア</a>
+    </div>
   </div>
 </div>
 
