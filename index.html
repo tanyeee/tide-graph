@@ -60,8 +60,8 @@
   }
   .wrap { max-width:1100px; margin:0 auto; }
   .card {
-    background:var(--card); border:1px solid var(--border); border-radius:18px;
-    padding:20px; box-shadow:var(--shadow);
+    background:transparent; border:0; border-radius:0;
+    padding:0; box-shadow:none;
   }
   h1 { margin:0 0 4px; font-size:clamp(24px,3vw,34px); }
   .app-summary { color:var(--muted); font-size:14px; line-height:1.7; margin:0 0 14px; white-space:nowrap; }
@@ -69,7 +69,6 @@
   .sub { margin-top:18px; }
   .legend { font-size:14px; margin-top:16px; }
   .river-footnote { color:#60a5fa; font-size:14px; line-height:1.7; margin-top:18px; }
-  .legend.chart-legend { margin-top:8px; margin-bottom:4px; }
   .note { margin-top:12px; font-size:14px; }
   .river-status { margin-top:0; }
   .data-status[data-state="error"], .river-status[data-state="error"] { color:#dc2626; font-weight:700; }
@@ -249,36 +248,26 @@
   @media (prefers-reduced-motion: reduce) {
     .now-pulse { display:none !important; animation:none; }
   }
-  .seekbar {
-    display:grid; grid-template-columns:64px 64px 1fr 64px 64px; align-items:center;
-    gap:12px; margin-top:12px; padding:0 4px;
+  .chart-controls {
+    position:absolute; left:20px; right:20px; bottom:24px; z-index:2;
+    display:grid; grid-template-columns:76px minmax(0, 1fr) 76px; align-items:center; gap:20px;
   }
-  .seekbar button {
-    width:64px; min-height:64px; border-radius:18px; font-weight:700;
-    line-height:1; padding:6px 0;
-    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
+  .chart-step-button {
+    min-height:76px; padding:6px 0; border-radius:20px;
+    border-color:rgba(255,255,255,.4); background:rgba(7,30,54,.72); color:#fff;
+    font-weight:700; line-height:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
   }
-  .seekbar button .nav-arrow { font-size:34px; line-height:1; }
-  .seekbar button.double .nav-arrow { font-size:28px; }
-  .seekbar button.double { font-weight:800; }
-  .seek-spacer { min-width:0; }
+  .chart-step-button .nav-arrow { font-size:40px; line-height:1; }
+  .chart-control-legend {
+    display:grid; grid-template-columns:repeat(2, max-content); justify-content:center; column-gap:24px; row-gap:10px;
+    color:rgba(255,255,255,.88); font-size:18px; line-height:1.1;
+  }
+  .chart-legend-item { display:flex; align-items:center; white-space:nowrap; }
+  .chart-control-legend .swatch { margin-bottom:0; }
+  .chart-control-legend .legend-symbol { margin-bottom:0; }
   @media (max-width: 780px) {
     body { padding:12px; }
-    .card { padding:14px; border-radius:14px; }
-    /* Full-bleed is applied to the .chart-bg-carrying container
-       (.chart-stack), not the canvas itself: .chart-stack has
-       overflow:hidden, so widening only #chart (as a previous fix did)
-       clipped 14px off each side of the canvas — cutting off the left
-       y-axis label and the rightmost x-axis label. Widening the container
-       instead means the canvas (still width:100% of it, from the base
-       #chart rule) is never larger than what .chart-stack can show, so
-       nothing gets clipped, and the --chart-bg blue reaches the card's
-       edges as intended. */
-    .chart-stack { width:calc(100% + 28px); margin-left:-14px; margin-right:-14px; border-radius:0; }
-    /* The canvas's own rounded corners would otherwise still paint (just
-       not be clipped by the container) even with the container's radius
-       reset above, leaving visible rounding at the now-flush edges. */
-    #chart { border-radius:0; }
+    .card { padding:0; border-radius:0; }
     .meta { grid-template-columns:repeat(3,minmax(0,1fr)); }
     .range-row { width:100%; justify-content:space-between; }
     #selectedHeight { font-size:22px; }
@@ -319,13 +308,12 @@
     .pill { min-width:0; padding:10px; }
     .pill .v { font-size:16px; white-space:nowrap; }
     #selectedHeight { font-size:20px; }
-    .seekbar { grid-template-columns:52px 52px minmax(0,1fr) 52px 52px; gap:5px; padding:0; }
-    .seekbar button { width:52px; min-height:56px; padding:4px 0; }
-    .seekbar button .nav-arrow { font-size:28px; }
-    .seekbar button.double .nav-arrow { font-size:24px; }
-    .seekbar button .nav-step { font-size:9px; }
-    .legend.chart-legend { font-size:12px; }
-    .legend.chart-legend .swatch { margin-right:.25em; }
+    .chart-controls { left:10px; right:10px; bottom:12px; grid-template-columns:56px minmax(0,1fr) 56px; gap:6px; }
+    .chart-step-button { min-height:56px; border-radius:16px; }
+    .chart-step-button .nav-arrow { font-size:30px; }
+    .chart-step-button .nav-step { font-size:10px; }
+    .chart-control-legend { grid-template-columns:repeat(2, max-content); column-gap:10px; row-gap:7px; font-size:12px; }
+    .chart-control-legend .swatch { margin-right:.25em; }
   }
 </style>
 </head>
@@ -359,26 +347,24 @@
     </div>
 
     <div class="chart-stack">
-      <canvas id="chart" width="1040" height="661" aria-label="天文潮位と河川水位の比較グラフ"></canvas>
+      <canvas id="chart" width="1040" height="900" aria-label="天文潮位と河川水位の比較グラフ"></canvas>
       <div id="nowPulse" class="now-pulse" aria-hidden="true"></div>
-    </div>
-
-    <div class="legend chart-legend">
-      <span class="swatch tide"></span>天文潮位（m）　<span class="swatch river"></span>河川水位　<span class="legend-symbol selection" aria-hidden="true"></span>選択時刻　<span class="legend-symbol now" aria-hidden="true"></span>現在時刻
+      <div class="chart-controls" aria-label="グラフの凡例と時刻操作">
+        <button id="btnPrev10" class="chart-step-button" type="button" aria-label="10分前"><span class="nav-step">10分</span><span class="nav-arrow">&lt;</span></button>
+        <div class="chart-control-legend" aria-label="凡例">
+          <span class="chart-legend-item"><span class="swatch tide"></span>海洋潮位</span>
+          <span class="chart-legend-item"><span class="legend-symbol now" aria-hidden="true"></span>現在時刻</span>
+          <span class="chart-legend-item"><span class="swatch river"></span>河川水位</span>
+          <span class="chart-legend-item"><span class="legend-symbol selection" aria-hidden="true"></span>選択時刻</span>
+        </div>
+        <button id="btnNext10" class="chart-step-button" type="button" aria-label="10分後"><span class="nav-step">10分</span><span class="nav-arrow">&gt;</span></button>
+      </div>
     </div>
 
     <div class="meta">
       <div class="pill"><div class="k">選択時刻</div><div class="v" id="selectedTime">-</div></div>
       <div class="pill"><div class="k">海洋潮位</div><div class="v" id="selectedHeight">-</div></div>
       <div class="pill"><div class="k">河川水位 <sup class="footnote-mark" id="riverFootnoteMark">※1</sup></div><div class="v" id="selectedRiverHeight">-</div></div>
-    </div>
-
-    <div class="seekbar">
-      <button id="btnPrev60" class="double" type="button" aria-label="1時間前"><span class="nav-step">1時間</span><span class="nav-arrow">&lt;&lt;</span></button>
-      <button id="btnPrev10" type="button" aria-label="10分前"><span class="nav-step">10分</span><span class="nav-arrow">&lt;</span></button>
-      <div class="seek-spacer" aria-hidden="true"></div>
-      <button id="btnNext10" type="button" aria-label="10分後"><span class="nav-step">10分</span><span class="nav-arrow">&gt;</span></button>
-      <button id="btnNext60" class="double" type="button" aria-label="1時間後"><span class="nav-step">1時間</span><span class="nav-arrow">&gt;&gt;</span></button>
     </div>
 
     <div class="range-row">
@@ -474,10 +460,8 @@ const btn1 = document.getElementById('btn1');
 const btn2 = document.getElementById('btn2');
 const btnPrev1 = document.getElementById('btnPrev1');
 const btnNext1 = document.getElementById('btnNext1');
-const btnPrev60 = document.getElementById('btnPrev60');
 const btnPrev10 = document.getElementById('btnPrev10');
 const btnNext10 = document.getElementById('btnNext10');
-const btnNext60 = document.getElementById('btnNext60');
 const btnReload = document.getElementById('btnReload');
 const riverStationSelect = document.getElementById('riverStation');
 const riverModeRelativeBtn = document.getElementById('riverModeRelative');
@@ -1159,8 +1143,9 @@ function drawChart() {
     right: isActualMode ? 90 : 20,
     // Keep a deliberate 30px gap between the sun/moon bars and the plot.
     top: SUN_MOON_BANDS_H + 30,
-    // Leave 5px from the plot to the labels, then 50px below the labels.
-    bottom: 5 + 28 + 50
+    // X-axis labels, then a dedicated lower blue panel for the in-chart
+    // legend and 10-minute controls.
+    bottom: 300
   };
   const plotW = W - m.left - m.right;
   const plotH = H - m.top - m.bottom;
@@ -1563,10 +1548,8 @@ function moveSelection(step) {
 
 btnPrev1.addEventListener('click', () => shiftDateBy(-1));
 btnNext1.addEventListener('click', () => shiftDateBy(1));
-btnPrev60.addEventListener('click', () => moveSelection(-6));
 btnPrev10.addEventListener('click', () => moveSelection(-1));
 btnNext10.addEventListener('click', () => moveSelection(1));
-btnNext60.addEventListener('click', () => moveSelection(6));
 btnReload.addEventListener('click', () => location.reload());
 riverStationSelect.addEventListener('change', () => {
   saveRiverStationSelection(riverStationSelect.value);
