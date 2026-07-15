@@ -282,7 +282,6 @@
     color:#ffefa0; font-size:14px; font-weight:700; line-height:1.2;
     pointer-events:none; text-align:center; text-shadow:0 1px 2px rgba(7,20,38,.75);
   }
-  .chart-selected-time .selected-time-label { display:block; }
   .chart-selected-time .selected-time-value { display:block; color:#fff8c9; font-weight:800; }
   .chart-step-button {
     min-height:76px; padding:6px 0; border-radius:20px;
@@ -396,7 +395,7 @@
     <div class="chart-stack">
       <canvas id="chart" width="1040" height="1000" aria-label="天文潮位と河川水位の比較グラフ"></canvas>
       <div id="nowPulse" class="now-pulse" aria-hidden="true"></div>
-      <div id="selectedTimeReadout" class="chart-selected-time"><span class="selected-time-label">選択時刻</span><span id="selectedTime" class="selected-time-value">-</span></div>
+      <div id="selectedTimeReadout" class="chart-selected-time"><span id="selectedTime" class="selected-time-value">-</span></div>
       <div class="meta chart-meta">
         <button id="btnPrev10" class="chart-step-button" type="button" aria-label="10分前"><span class="nav-step">10分</span><span class="nav-arrow">&lt;</span></button>
         <div class="pill ocean-pill"><div class="k">海洋潮位</div><div class="v" id="selectedHeight">-</div></div>
@@ -1541,8 +1540,8 @@ function updateSelectedTimeReadout() {
   const py = chartRect.top - parentRect.top + borderY + marker.y * scaleY;
   const placeToLeft = px > chart.clientWidth * 0.72;
 
-  // Match the canvas-rendered moon rise/set numbers at the current scale.
-  const sunMoonLabelSize = SUN_MOON_LABEL_PX * scaleX;
+  // Keep the selected time slightly larger than the moon rise/set numbers.
+  const sunMoonLabelSize = (SUN_MOON_LABEL_PX + 2) * scaleX;
   selectedTimeReadoutEl.style.fontSize = `${sunMoonLabelSize}px`;
   selectedTimeReadoutEl.style.left = `${px + (placeToLeft ? -14 : 14)}px`;
   selectedTimeReadoutEl.style.top = `${Math.max(18, Math.min(chart.clientHeight - 18, py))}px`;
