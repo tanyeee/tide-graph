@@ -266,7 +266,11 @@
     background:transparent; border:0;
     padding:6px 10px;
   }
-  .chart-meta .pill .k { margin-bottom:2px; }
+  .chart-meta .pill .k {
+    margin-bottom:2px; font-size:calc(24px - 1pt); font-weight:800;
+  }
+  .chart-meta .pill:first-child .k { color:var(--highlight); }
+  .chart-meta .pill:last-child .k { color:var(--river); }
   .chart-meta .pill .v { font-size:24px; }
   .chart-selected-time {
     position:absolute; z-index:4; display:none; white-space:nowrap;
@@ -274,7 +278,7 @@
     pointer-events:none; text-align:center; text-shadow:0 1px 2px rgba(7,20,38,.75);
   }
   .chart-selected-time .selected-time-label { display:block; }
-  .chart-selected-time .selected-time-value { display:block; color:#fff8c9; font-size:16px; font-weight:800; }
+  .chart-selected-time .selected-time-value { display:block; color:#fff8c9; font-weight:800; }
   .chart-step-button {
     min-height:76px; padding:6px 0; border-radius:20px;
     border-color:rgba(255,255,255,.4); background:rgba(7,30,54,.72); color:#fff;
@@ -299,6 +303,7 @@
     .chart-stack { width:calc(100% + 24px); margin-left:-12px; margin-right:-12px; }
     .chart-meta { left:16px; right:16px; bottom:100px; grid-template-columns:repeat(2,minmax(0,1fr)); }
     .chart-meta .pill .v { font-size:22px; }
+    .chart-meta .pill .k { font-size:calc(22px - 1pt); }
     .meta { grid-template-columns:repeat(3,minmax(0,1fr)); }
     .range-row { width:100%; justify-content:space-between; }
     #selectedHeight { font-size:22px; }
@@ -339,6 +344,7 @@
     .pill { min-width:0; padding:10px; }
     .pill .v { font-size:16px; white-space:nowrap; }
     .chart-meta .pill .v { font-size:20px; }
+    .chart-meta .pill .k { font-size:calc(20px - 1pt); }
     #selectedHeight { font-size:20px; }
     .chart-controls { left:10px; right:10px; bottom:38px; grid-template-columns:56px minmax(0,1fr) 56px; gap:6px; }
     .chart-step-button { min-height:56px; border-radius:16px; }
@@ -1209,7 +1215,7 @@ function drawChart() {
   // rendered scale. The selected-time readout now follows the live marker.
   const renderedScale = chart.clientWidth / W || 1;
   const labelTopCss = chartMetaEl
-    ? chartMetaEl.offsetTop - 12 - 28 * renderedScale
+    ? chartMetaEl.offsetTop - 22 - 28 * renderedScale
     : (H - 330) * renderedScale;
   const chartBottom = Math.max(180, H - labelTopCss / renderedScale + 5);
   const m = {
@@ -1508,6 +1514,9 @@ function updateSelectedTimeReadout() {
   const py = chartRect.top - parentRect.top + borderY + marker.y * scaleY;
   const placeToLeft = px > chart.clientWidth * 0.72;
 
+  // Match the canvas-rendered moon rise/set numbers at the current scale.
+  const sunMoonLabelSize = SUN_MOON_LABEL_PX * scaleX;
+  selectedTimeReadoutEl.style.fontSize = `${sunMoonLabelSize}px`;
   selectedTimeReadoutEl.style.left = `${px + (placeToLeft ? -14 : 14)}px`;
   selectedTimeReadoutEl.style.top = `${Math.max(18, Math.min(chart.clientHeight - 18, py))}px`;
   selectedTimeReadoutEl.style.transform = `translate(${placeToLeft ? '-100%' : '0'}, -50%)`;
