@@ -270,10 +270,10 @@
   .chart-meta .pill .v { font-size:24px; }
   .chart-selected-time {
     position:absolute; z-index:4; display:none; white-space:nowrap;
-    color:#ffd9df; font-size:14px; font-weight:700; line-height:1.2;
+    color:#ffefa0; font-size:14px; font-weight:700; line-height:1.2;
     pointer-events:none; text-shadow:0 1px 2px rgba(7,20,38,.75);
   }
-  .chart-selected-time span { color:#fff0f3; font-size:16px; font-weight:800; }
+  .chart-selected-time span { color:#fff8c9; font-size:16px; font-weight:800; }
   .chart-step-button {
     min-height:76px; padding:6px 0; border-radius:20px;
     border-color:rgba(255,255,255,.4); background:rgba(7,30,54,.72); color:#fff;
@@ -1479,9 +1479,8 @@ function updateNowPulseElement() {
   return true;
 }
 
-// Keep the selected-time readout close to the red live-time marker. When the
-// displayed date has no live marker, fall back to the selected yellow point
-// so that the selected time remains discoverable for past/future dates.
+// Keep the selected-time readout close to its yellow selected point, with the
+// same warm tint as the selection marker.
 function updateSelectedTimeReadout() {
   if (!plot || !currentSeries.length) {
     selectedTimeReadoutEl.style.display = 'none';
@@ -1489,11 +1488,10 @@ function updateSelectedTimeReadout() {
   }
 
   const selected = currentSeries[currentSelectedIndex];
-  const liveMarker = currentMarkerPosition();
-  const marker = liveMarker || (selected && {
+  const marker = selected && {
     x: plot.xFromMinute(selected.minute),
     y: plot.yFromHeight(selected.height)
-  });
+  };
   if (!marker) {
     selectedTimeReadoutEl.style.display = 'none';
     return;
