@@ -256,15 +256,15 @@
   }
   .chart-controls {
     position:absolute; left:20px; right:20px; bottom:48px; z-index:2;
-    display:grid; grid-template-columns:76px minmax(0, 1fr) 76px; align-items:center; gap:20px;
+    display:flex; justify-content:center;
   }
   .chart-meta {
-    position:absolute; left:76px; right:76px; bottom:136px; z-index:2;
-    display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin:0;
+    position:absolute; left:20px; right:20px; bottom:110px; z-index:2;
+    display:grid; grid-template-columns:64px repeat(2,minmax(0,1fr)) 64px; align-items:center; gap:12px; margin:0;
   }
   .chart-meta .pill {
     background:transparent; border:0;
-    padding:6px 10px;
+    padding:6px 2px;
   }
   .chart-meta .pill .k {
     margin-bottom:2px; font-size:18px; font-weight:700; opacity:.78;
@@ -272,6 +272,11 @@
   .chart-meta .pill:first-child .k { color:var(--highlight); }
   .chart-meta .pill:last-child .k { color:var(--river); }
   .chart-meta .pill .v { font-size:24px; }
+  .chart-meta .chart-step-button {
+    min-height:56px; border-radius:16px;
+  }
+  .chart-meta .chart-step-button .nav-arrow { font-size:30px; }
+  .chart-meta .chart-step-button .nav-step { font-size:10px; }
   .chart-selected-time {
     position:absolute; z-index:4; display:none; white-space:nowrap;
     color:#ffefa0; font-size:14px; font-weight:700; line-height:1.2;
@@ -286,7 +291,7 @@
   }
   .chart-step-button .nav-arrow { font-size:40px; line-height:1; }
   .chart-control-legend {
-    display:grid; grid-template-columns:repeat(2, max-content); justify-content:center; column-gap:24px; row-gap:10px;
+    display:grid; grid-template-columns:repeat(4, max-content); justify-content:center; column-gap:18px;
     color:rgba(255,255,255,.88); font-size:20px; line-height:1.1;
   }
   .chart-legend-item { display:flex; align-items:center; white-space:nowrap; }
@@ -301,7 +306,7 @@
     body { padding:12px; }
     .card { padding:0; border-radius:0; }
     .chart-stack { width:calc(100% + 24px); margin-left:-12px; margin-right:-12px; }
-    .chart-meta { left:16px; right:16px; bottom:100px; grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .chart-meta { left:16px; right:16px; bottom:82px; grid-template-columns:56px repeat(2,minmax(0,1fr)) 56px; gap:10px; }
     .chart-meta .pill .v { font-size:22px; }
     .chart-meta .pill .k { font-size:17px; }
     .meta { grid-template-columns:repeat(3,minmax(0,1fr)); }
@@ -340,19 +345,23 @@
     .river-field select { padding:10px 8px; font-size:16px; }
     .refresh-wrap { order:3; margin-left:0; }
     .meta { grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
-    .chart-meta { grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+    .chart-meta { left:10px; right:10px; bottom:70px; grid-template-columns:52px repeat(2,minmax(0,1fr)) 52px; gap:6px; }
     .pill { min-width:0; padding:10px; }
     .pill .v { font-size:16px; white-space:nowrap; }
     .chart-meta .pill .v { font-size:20px; }
-    .chart-meta .pill .k { font-size:16px; }
+    .chart-meta .pill .k { font-size:13px; white-space:nowrap; }
     #selectedHeight { font-size:20px; }
-    .chart-controls { left:10px; right:10px; bottom:38px; grid-template-columns:56px minmax(0,1fr) 56px; gap:6px; }
+    .chart-controls { left:10px; right:10px; bottom:38px; }
     .chart-step-button { min-height:56px; border-radius:16px; }
     .chart-step-button .nav-arrow { font-size:30px; }
     .chart-step-button .nav-step { font-size:10px; }
-    .chart-control-legend { grid-template-columns:repeat(2, max-content); column-gap:10px; row-gap:7px; font-size:13px; }
+    .chart-control-legend { grid-template-columns:repeat(4, max-content); column-gap:7px; font-size:12px; }
     .chart-control-legend .swatch { margin-right:.25em; }
     .chart-interaction-hint { bottom:10px; font-size:10px; }
+  }
+  @media (max-width: 360px) {
+    .chart-meta { grid-template-columns:44px repeat(2,minmax(0,1fr)) 44px; gap:4px; }
+    .chart-meta .pill .k { font-size:11px; }
   }
 </style>
 </head>
@@ -389,18 +398,18 @@
       <div id="nowPulse" class="now-pulse" aria-hidden="true"></div>
       <div id="selectedTimeReadout" class="chart-selected-time"><span class="selected-time-label">選択時刻</span><span id="selectedTime" class="selected-time-value">-</span></div>
       <div class="meta chart-meta">
-        <div class="pill"><div class="k">海洋潮位</div><div class="v" id="selectedHeight">-</div></div>
-        <div class="pill"><div class="k">河川水位 <sup class="footnote-mark" id="riverFootnoteMark">※1</sup></div><div class="v" id="selectedRiverHeight">-</div></div>
-      </div>
-      <div class="chart-controls" aria-label="グラフの凡例と時刻操作">
         <button id="btnPrev10" class="chart-step-button" type="button" aria-label="10分前"><span class="nav-step">10分</span><span class="nav-arrow">&lt;</span></button>
+        <div class="pill"><div class="k">海洋潮位</div><div class="v" id="selectedHeight">-</div></div>
+        <div class="pill"><div class="k">河川水位<span id="riverModeLabel">（相対）</span> <sup class="footnote-mark" id="riverFootnoteMark">※1</sup></div><div class="v" id="selectedRiverHeight">-</div></div>
+        <button id="btnNext10" class="chart-step-button" type="button" aria-label="10分後"><span class="nav-step">10分</span><span class="nav-arrow">&gt;</span></button>
+      </div>
+      <div class="chart-controls" aria-label="グラフの凡例">
         <div class="chart-control-legend" aria-label="凡例">
           <span class="chart-legend-item"><span class="swatch tide"></span>海洋潮位</span>
-          <span class="chart-legend-item"><span class="legend-symbol now" aria-hidden="true"></span>現在時刻</span>
           <span class="chart-legend-item"><span class="swatch river"></span>河川水位</span>
+          <span class="chart-legend-item"><span class="legend-symbol now" aria-hidden="true"></span>現在時刻</span>
           <span class="chart-legend-item"><span class="legend-symbol selection" aria-hidden="true"></span>選択時刻</span>
         </div>
-        <button id="btnNext10" class="chart-step-button" type="button" aria-label="10分後"><span class="nav-step">10分</span><span class="nav-arrow">&gt;</span></button>
       </div>
       <div class="chart-interaction-hint">グラフ内をタップまたはクリックすると好きな時刻を選択できます。</div>
     </div>
@@ -517,6 +526,7 @@ const riverModeRelativeBtn = document.getElementById('riverModeRelative');
 const riverModeActualBtn = document.getElementById('riverModeActual');
 const riverFootnoteMarkEl = document.getElementById('riverFootnoteMark');
 const riverFootnoteTextEl = document.getElementById('riverFootnoteText');
+const riverModeLabelEl = document.getElementById('riverModeLabel');
 const tideNameEl = document.getElementById('tideName');
 const selectedTimeEl = document.getElementById('selectedTime');
 const selectedTimeReadoutEl = document.getElementById('selectedTimeReadout');
@@ -587,6 +597,7 @@ function updateRiverModeUI() {
   const isActual = riverDisplayMode === 'actual';
   riverModeRelativeBtn.classList.toggle('active', !isActual);
   riverModeActualBtn.classList.toggle('active', isActual);
+  riverModeLabelEl.textContent = isActual ? '（実水位）' : '（相対）';
   riverFootnoteMarkEl.style.display = '';
   riverFootnoteTextEl.style.display = '';
 }
