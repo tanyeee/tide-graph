@@ -68,6 +68,10 @@
   .sub { margin-top:18px; }
   .legend { font-size:14px; margin-top:16px; }
   .river-footnote { color:#60a5fa; font-size:14px; line-height:1.7; margin-top:18px; }
+  .river-footnote summary { cursor:pointer; font-weight:700; }
+  .river-footnote[open] summary { margin-bottom:8px; }
+  .river-footnote hr { border:0; border-top:1px solid rgba(96,165,250,.55); margin:10px 0; }
+  .river-footnote p { margin:0; }
   .note { margin-top:12px; font-size:14px; }
   .river-status { margin-top:0; }
   .data-status[data-state="error"], .river-status[data-state="error"] { color:#dc2626; font-weight:700; }
@@ -424,7 +428,15 @@
       </div>
     </div>
 
-    <div id="riverFootnoteText" class="river-footnote">※1 河川水位モード<br>【相対水位】河川水位の変化が海洋潮位に合うよう自動調整した参考値です。河川の潮位変化が海洋潮位に対してどの程度遅れているかを確認するのに適しています。<br>【実水位】国土交通省が公開している河川水位データの値を表示します。河川が増水しているかどうかを確認するのに適しています。なお、観測地点によっては、平常時でも水位がマイナスの値を示す場合があります。<br>【河川水位観測地点】久慈川水系および涸沼・那珂川水系の汽水域にある観測地点から、表示する地点を選択できます。<br>【更新】更新ボタンを押すと現在時刻に戻り、最新のデータを取得します。</div>
+    <details id="riverFootnoteText" class="river-footnote">
+      <summary>機能紹介</summary>
+      <hr>
+      <p>【河川水位モード】<sup>※1</sup><br>相対：河川水位の変化が海洋潮位に合うよう自動調整した参考値です。河川の潮位変化が海洋潮位に対してどの程度遅れているかを確認するのに適しています。<br>実水位：国土交通省が公開している河川水位データの値を表示します。河川が増水しているかどうかを確認するのに適しています。なお、観測地点によっては、平常時でも水位がマイナスの値を示す場合があります。</p>
+      <hr>
+      <p>【河川水位観測地点】久慈川水系および涸沼・那珂川水系の汽水域にある観測地点から、表示する地点を選択できます。</p>
+      <hr>
+      <p>【更新】更新ボタンを押すと現在時刻に戻り、最新のデータを取得します。</p>
+    </details>
     <div id="dataStatus" class="note data-status" role="status" aria-live="polite">
       潮位データを読み込んでいます…
     </div>
