@@ -269,10 +269,11 @@
   .chart-meta .pill .k { margin-bottom:2px; }
   .chart-meta .pill .v { font-size:24px; }
   .chart-selected-time {
-    position:absolute; left:0; right:0; top:-28px;
-    color:rgba(255,255,255,.82); font-size:14px; line-height:1.2; text-align:center;
+    position:absolute; z-index:4; display:none; white-space:nowrap;
+    color:#ffd9df; font-size:14px; font-weight:700; line-height:1.2;
+    pointer-events:none; text-shadow:0 1px 2px rgba(7,20,38,.75);
   }
-  .chart-selected-time span { color:#fff; font-size:16px; font-weight:800; }
+  .chart-selected-time span { color:#fff0f3; font-size:16px; font-weight:800; }
   .chart-step-button {
     min-height:76px; padding:6px 0; border-radius:20px;
     border-color:rgba(255,255,255,.4); background:rgba(7,30,54,.72); color:#fff;
@@ -379,8 +380,8 @@
     <div class="chart-stack">
       <canvas id="chart" width="1040" height="1000" aria-label="天文潮位と河川水位の比較グラフ"></canvas>
       <div id="nowPulse" class="now-pulse" aria-hidden="true"></div>
+      <div id="selectedTimeReadout" class="chart-selected-time">選択時刻 <span id="selectedTime">-</span></div>
       <div class="meta chart-meta">
-        <div class="chart-selected-time">選択時刻 <span id="selectedTime">-</span></div>
         <div class="pill"><div class="k">海洋潮位</div><div class="v" id="selectedHeight">-</div></div>
         <div class="pill"><div class="k">河川水位 <sup class="footnote-mark" id="riverFootnoteMark">※1</sup></div><div class="v" id="selectedRiverHeight">-</div></div>
       </div>
@@ -511,6 +512,7 @@ const riverFootnoteMarkEl = document.getElementById('riverFootnoteMark');
 const riverFootnoteTextEl = document.getElementById('riverFootnoteText');
 const tideNameEl = document.getElementById('tideName');
 const selectedTimeEl = document.getElementById('selectedTime');
+const selectedTimeReadoutEl = document.getElementById('selectedTimeReadout');
 const selectedHeightEl = document.getElementById('selectedHeight');
 const selectedRiverHeightEl = document.getElementById('selectedRiverHeight');
 const dataStatusEl = document.getElementById('dataStatus');
@@ -1202,11 +1204,11 @@ function drawChart() {
   // right-side axis labels (m単位); 相対 mode keeps right:20 and draws no
   // right-axis labels, exactly as before.
   // The value cards are HTML overlaid on the canvas. Keep the x-axis labels
-  // clear of the selected-time readout and extrema callouts regardless of
-  // the canvas's rendered scale.
+  // clear of extrema callouts and the value cards regardless of the canvas's
+  // rendered scale. The selected-time readout now follows the live marker.
   const renderedScale = chart.clientWidth / W || 1;
   const labelTopCss = chartMetaEl
-    ? chartMetaEl.offsetTop - 28 - 35 - 28 * renderedScale
+    ? chartMetaEl.offsetTop - 12 - 28 * renderedScale
     : (H - 330) * renderedScale;
   const chartBottom = Math.max(180, H - labelTopCss / renderedScale + 5);
   const m = {
@@ -1477,6 +1479,42 @@ function updateNowPulseElement() {
   return true;
 }
 
+// Keep the selected-time readout close to the red live-time marker. When the
+// displayed date has no live marker, fall back to the selected yellow point
+// so that the selected time remains discoverable for past/future dates.
+function updateSelectedTimeReadout() {
+  if (!plot || !currentSeries.length) {
+    selectedTimeReadoutEl.style.display = 'none';
+    return;
+  }
+
+  const selected = currentSeries[currentSelectedIndex];
+  const liveMarker = currentMarkerPosition();
+  const marker = liveMarker || (selected && {
+    x: plot.xFromMinute(selected.minute),
+    y: plot.yFromHeight(selected.height)
+  });
+  if (!marker) {
+    selectedTimeReadoutEl.style.display = 'none';
+    return;
+  }
+
+  const chartRect = chart.getBoundingClientRect();
+  const parentRect = chart.parentElement.getBoundingClientRect();
+  const scaleX = chart.clientWidth / chart.width;
+  const scaleY = chart.clientHeight / chart.height;
+  const borderX = (chartRect.width - chart.clientWidth) / 2;
+  const borderY = (chartRect.height - chart.clientHeight) / 2;
+  const px = chartRect.left - parentRect.left + borderX + marker.x * scaleX;
+  const py = chartRect.top - parentRect.top + borderY + marker.y * scaleY;
+  const placeToLeft = px > chart.clientWidth * 0.72;
+
+  selectedTimeReadoutEl.style.left = `${px + (placeToLeft ? -14 : 14)}px`;
+  selectedTimeReadoutEl.style.top = `${Math.max(18, Math.min(chart.clientHeight - 18, py))}px`;
+  selectedTimeReadoutEl.style.transform = `translate(${placeToLeft ? '-100%' : '0'}, -50%)`;
+  selectedTimeReadoutEl.style.display = 'block';
+}
+
 function nearestPointFromClient(clientX) {
   const rect = chart.getBoundingClientRect();
   const x = (clientX - rect.left) * (chart.width / rect.width);
@@ -1541,6 +1579,7 @@ function drawSelection(point, updateMeta = true) {
         : '—';
     }
   }
+  updateSelectedTimeReadout();
 }
 
 function syncNowMarkerEffects() {
@@ -1548,6 +1587,7 @@ function syncNowMarkerEffects() {
   nowMarkerRefreshTimer = null;
   const hasCurrentMarker = !!currentMarkerPosition();
   updateNowPulseElement();
+  updateSelectedTimeReadout();
   if (!shouldScheduleMarkerRefresh(hasCurrentMarker, document.hidden)) return;
 
   const delayToNextMinute = 60050 - (Date.now() % 60000);
