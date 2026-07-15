@@ -263,7 +263,7 @@
     display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin:0;
   }
   .chart-meta .pill {
-    background:rgba(7,30,54,.72); border-color:rgba(255,255,255,.4);
+    background:transparent; border:0;
     padding:6px 10px;
   }
   .chart-meta .pill .k { margin-bottom:2px; }
@@ -271,9 +271,10 @@
   .chart-selected-time {
     position:absolute; z-index:4; display:none; white-space:nowrap;
     color:#ffefa0; font-size:14px; font-weight:700; line-height:1.2;
-    pointer-events:none; text-shadow:0 1px 2px rgba(7,20,38,.75);
+    pointer-events:none; text-align:center; text-shadow:0 1px 2px rgba(7,20,38,.75);
   }
-  .chart-selected-time span { color:#fff8c9; font-size:16px; font-weight:800; }
+  .chart-selected-time .selected-time-label { display:block; }
+  .chart-selected-time .selected-time-value { display:block; color:#fff8c9; font-size:16px; font-weight:800; }
   .chart-step-button {
     min-height:76px; padding:6px 0; border-radius:20px;
     border-color:rgba(255,255,255,.4); background:rgba(7,30,54,.72); color:#fff;
@@ -380,7 +381,7 @@
     <div class="chart-stack">
       <canvas id="chart" width="1040" height="1000" aria-label="天文潮位と河川水位の比較グラフ"></canvas>
       <div id="nowPulse" class="now-pulse" aria-hidden="true"></div>
-      <div id="selectedTimeReadout" class="chart-selected-time">選択時刻 <span id="selectedTime">-</span></div>
+      <div id="selectedTimeReadout" class="chart-selected-time"><span class="selected-time-label">選択時刻</span><span id="selectedTime" class="selected-time-value">-</span></div>
       <div class="meta chart-meta">
         <div class="pill"><div class="k">海洋潮位</div><div class="v" id="selectedHeight">-</div></div>
         <div class="pill"><div class="k">河川水位 <sup class="footnote-mark" id="riverFootnoteMark">※1</sup></div><div class="v" id="selectedRiverHeight">-</div></div>
