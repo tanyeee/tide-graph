@@ -269,11 +269,11 @@
   .chart-meta .pill .k {
     margin-bottom:2px; font-size:18px; font-weight:700; opacity:1;
   }
-  .chart-meta .pill:first-child .k { color:#FFF4B8; }
-  .chart-meta .pill:last-child .k { color:#CDEFFF; }
+  .chart-meta .ocean-pill .k { color:#FFF4B8; }
+  .chart-meta .river-pill .k { color:#CDEFFF; }
   .chart-meta .pill .v { font-size:24px; }
   .chart-meta .chart-step-button {
-    min-height:56px; border-radius:16px;
+    min-height:56px; border:1px solid rgba(255,255,255,.78); border-radius:16px;
   }
   .chart-meta .chart-step-button .nav-arrow { font-size:30px; }
   .chart-meta .chart-step-button .nav-step { font-size:10px; }
@@ -399,8 +399,8 @@
       <div id="selectedTimeReadout" class="chart-selected-time"><span class="selected-time-label">選択時刻</span><span id="selectedTime" class="selected-time-value">-</span></div>
       <div class="meta chart-meta">
         <button id="btnPrev10" class="chart-step-button" type="button" aria-label="10分前"><span class="nav-step">10分</span><span class="nav-arrow">&lt;</span></button>
-        <div class="pill"><div class="k">海洋潮位</div><div class="v" id="selectedHeight">-</div></div>
-        <div class="pill"><div class="k">河川水位<span id="riverModeLabel">（相対）</span> <sup class="footnote-mark" id="riverFootnoteMark">※1</sup></div><div class="v" id="selectedRiverHeight">-</div></div>
+        <div class="pill ocean-pill"><div class="k">海洋潮位</div><div class="v" id="selectedHeight">-</div></div>
+        <div class="pill river-pill"><div class="k">河川水位<span id="riverModeLabel">（相対）</span> <sup class="footnote-mark" id="riverFootnoteMark">※1</sup></div><div class="v" id="selectedRiverHeight">-</div></div>
         <button id="btnNext10" class="chart-step-button" type="button" aria-label="10分後"><span class="nav-step">10分</span><span class="nav-arrow">&gt;</span></button>
       </div>
       <div class="chart-controls" aria-label="グラフの凡例">
