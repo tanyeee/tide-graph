@@ -77,7 +77,7 @@
   .data-status[data-state="error"], .river-status[data-state="error"] { color:#dc2626; font-weight:700; }
   .data-status[data-state="warning"], .river-status[data-state="warning"] { color:#d97706; font-weight:700; }
   .controls {
-    display:flex; flex-wrap:wrap; gap:12px; align-items:end; justify-content:center; margin-bottom:18px;
+    display:flex; flex-wrap:wrap; gap:12px; align-items:end; justify-content:center; margin-bottom:8px;
   }
   .field {
     display:flex; flex-direction:column; gap:6px; min-width:0;
@@ -122,9 +122,9 @@
   }
   .date-nav-info-row {
     display:grid; grid-template-columns:var(--date-nav-cols); gap:var(--date-nav-gap);
-    position:relative; min-height:44px; justify-content:start; margin-bottom:-4px;
+    position:relative; min-height:38px; justify-content:start; margin-bottom:-8px;
   }
-  .date-info-anchor { position:absolute; top:10px; }
+  .date-info-anchor { position:absolute; top:4px; }
   .date-info-btn {
     flex:0 0 auto; width:44px; height:44px; padding:0;
     border:0; background:transparent; cursor:pointer;
@@ -260,7 +260,7 @@
   }
   .chart-meta {
     position:absolute; left:76px; right:76px; bottom:136px; z-index:2;
-    margin:0;
+    display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin:0;
   }
   .chart-meta .pill {
     background:rgba(7,30,54,.72); border-color:rgba(255,255,255,.4);
@@ -268,6 +268,11 @@
   }
   .chart-meta .pill .k { margin-bottom:2px; }
   .chart-meta .pill .v { font-size:24px; }
+  .chart-selected-time {
+    position:absolute; left:0; right:0; top:-28px;
+    color:rgba(255,255,255,.82); font-size:14px; line-height:1.2; text-align:center;
+  }
+  .chart-selected-time span { color:#fff; font-size:16px; font-weight:800; }
   .chart-step-button {
     min-height:76px; padding:6px 0; border-radius:20px;
     border-color:rgba(255,255,255,.4); background:rgba(7,30,54,.72); color:#fff;
@@ -290,7 +295,7 @@
     body { padding:12px; }
     .card { padding:0; border-radius:0; }
     .chart-stack { width:calc(100% + 24px); margin-left:-12px; margin-right:-12px; }
-    .chart-meta { left:16px; right:16px; bottom:100px; }
+    .chart-meta { left:16px; right:16px; bottom:100px; grid-template-columns:repeat(2,minmax(0,1fr)); }
     .chart-meta .pill .v { font-size:22px; }
     .meta { grid-template-columns:repeat(3,minmax(0,1fr)); }
     .range-row { width:100%; justify-content:space-between; }
@@ -328,6 +333,7 @@
     .river-field select { padding:10px 8px; font-size:16px; }
     .refresh-wrap { order:3; margin-left:0; }
     .meta { grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
+    .chart-meta { grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
     .pill { min-width:0; padding:10px; }
     .pill .v { font-size:16px; white-space:nowrap; }
     .chart-meta .pill .v { font-size:20px; }
@@ -374,7 +380,7 @@
       <canvas id="chart" width="1040" height="1000" aria-label="天文潮位と河川水位の比較グラフ"></canvas>
       <div id="nowPulse" class="now-pulse" aria-hidden="true"></div>
       <div class="meta chart-meta">
-        <div class="pill"><div class="k">選択時刻</div><div class="v" id="selectedTime">-</div></div>
+        <div class="chart-selected-time">選択時刻 <span id="selectedTime">-</span></div>
         <div class="pill"><div class="k">海洋潮位</div><div class="v" id="selectedHeight">-</div></div>
         <div class="pill"><div class="k">河川水位 <sup class="footnote-mark" id="riverFootnoteMark">※1</sup></div><div class="v" id="selectedRiverHeight">-</div></div>
       </div>
@@ -533,7 +539,7 @@ const RIVER_DISPLAY_MODE_STORAGE_KEY = 'riverDisplayMode';
 const RIVER_AXIS_EXTEND_STEP = 0.5;
 let riverDisplayMode = 'relative';
 
-const MOBILE_CHART_HEIGHT = 1000;
+const MOBILE_CHART_HEIGHT = 1050;
 const DESKTOP_CHART_HEIGHT = 800;
 
 function syncChartCanvasHeight() {
@@ -1105,7 +1111,8 @@ const NOW_PULSE_MAX_RADIUS = 40;
 const SUN_MOON_BAND_H = 42;
 const SUN_MOON_ICON_PX = 30;
 const SUN_MOON_LABEL_PX = 27;
-const SUN_MOON_MOON_Y = 0;
+const SUN_MOON_TOP_PADDING = 14;
+const SUN_MOON_MOON_Y = SUN_MOON_TOP_PADDING;
 const SUN_MOON_SUN_Y = SUN_MOON_MOON_Y + SUN_MOON_BAND_H + 3;
 const SUN_MOON_BANDS_H = SUN_MOON_SUN_Y + SUN_MOON_BAND_H;
 
@@ -1195,16 +1202,17 @@ function drawChart() {
   // right-side axis labels (m単位); 相対 mode keeps right:20 and draws no
   // right-axis labels, exactly as before.
   // The value cards are HTML overlaid on the canvas. Keep the x-axis labels
-  // 15 CSS pixels above them regardless of the canvas's rendered scale.
+  // clear of the selected-time readout and extrema callouts regardless of
+  // the canvas's rendered scale.
   const renderedScale = chart.clientWidth / W || 1;
   const labelTopCss = chartMetaEl
-    ? chartMetaEl.offsetTop - 15 - 28 * renderedScale
+    ? chartMetaEl.offsetTop - 28 - 35 - 28 * renderedScale
     : (H - 330) * renderedScale;
   const chartBottom = Math.max(180, H - labelTopCss / renderedScale + 5);
   const m = {
     left: 80,
     right: isActualMode ? 90 : 20,
-    // Keep a deliberate 30px gap between the sun/moon bars and the plot.
+    // Keep a deliberate gap between the sun/moon bars and the plot.
     top: SUN_MOON_BANDS_H + 30,
     // X-axis labels, then the value cards, legend and 10-minute controls.
     bottom: chartBottom
