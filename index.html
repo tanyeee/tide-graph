@@ -1337,6 +1337,22 @@ function drawChart() {
 
   const xStep = dayCount === 1 ? 3 : 6;
   const maxHour = dayCount * 24;
+  // One-hour minor ticks make it easier to read intermediate times without
+  // adding another row of labels. They point inward from the x-axis and do
+  // not replace the existing major grid/label cadence.
+  const minorTickLength = 10;
+  ctx.strokeStyle = gridColor;
+  ctx.lineWidth = 1.5;
+  for (let h = 1; h < maxHour; h++) {
+    if (h % xStep === 0) continue;
+    const x = xFromMinute(h * 60);
+    ctx.beginPath();
+    ctx.moveTo(x, H - m.bottom);
+    ctx.lineTo(x, H - m.bottom - minorTickLength);
+    ctx.stroke();
+  }
+
+  ctx.lineWidth = 1;
   for (let h = 0; h <= maxHour; h += xStep) {
     const minute = h * 60;
     const x = xFromMinute(minute);
