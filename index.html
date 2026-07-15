@@ -267,7 +267,7 @@
     padding:6px 10px;
   }
   .chart-meta .pill .k {
-    margin-bottom:2px; font-size:calc(24px - 1pt); font-weight:800;
+    margin-bottom:2px; font-size:18px; font-weight:700; opacity:.78;
   }
   .chart-meta .pill:first-child .k { color:var(--highlight); }
   .chart-meta .pill:last-child .k { color:var(--river); }
@@ -281,7 +281,7 @@
   .chart-selected-time .selected-time-value { display:block; color:#fff8c9; font-weight:800; }
   .chart-step-button {
     min-height:76px; padding:6px 0; border-radius:20px;
-    border-color:rgba(255,255,255,.4); background:rgba(7,30,54,.72); color:#fff;
+    border-color:rgba(255,255,255,.78); background:rgba(20,68,98,.9); color:#fff;
     font-weight:700; line-height:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
   }
   .chart-step-button .nav-arrow { font-size:40px; line-height:1; }
@@ -303,7 +303,7 @@
     .chart-stack { width:calc(100% + 24px); margin-left:-12px; margin-right:-12px; }
     .chart-meta { left:16px; right:16px; bottom:100px; grid-template-columns:repeat(2,minmax(0,1fr)); }
     .chart-meta .pill .v { font-size:22px; }
-    .chart-meta .pill .k { font-size:calc(22px - 1pt); }
+    .chart-meta .pill .k { font-size:17px; }
     .meta { grid-template-columns:repeat(3,minmax(0,1fr)); }
     .range-row { width:100%; justify-content:space-between; }
     #selectedHeight { font-size:22px; }
@@ -344,7 +344,7 @@
     .pill { min-width:0; padding:10px; }
     .pill .v { font-size:16px; white-space:nowrap; }
     .chart-meta .pill .v { font-size:20px; }
-    .chart-meta .pill .k { font-size:calc(20px - 1pt); }
+    .chart-meta .pill .k { font-size:16px; }
     #selectedHeight { font-size:20px; }
     .chart-controls { left:10px; right:10px; bottom:38px; grid-template-columns:56px minmax(0,1fr) 56px; gap:6px; }
     .chart-step-button { min-height:56px; border-radius:16px; }
@@ -1222,7 +1222,7 @@ function drawChart() {
     left: 80,
     right: isActualMode ? 90 : 20,
     // Keep a deliberate gap between the sun/moon bars and the plot.
-    top: SUN_MOON_BANDS_H + 30,
+    top: SUN_MOON_BANDS_H + 50,
     // X-axis labels, then the value cards, legend and 10-minute controls.
     bottom: chartBottom
   };
