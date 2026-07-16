@@ -767,6 +767,12 @@ async function initializeData() {
   }
   refresh();
   await loadRiverStation(riverStationSelect.value);
+  // The first tide-only refresh happens before the asynchronous river feed is
+  // ready. Once it arrives, prefer the closest chart point that actually has
+  // a river observation so the initial river value is useful immediately.
+  currentSelectedIndex = getInitialSelectedIndexWithRiver();
+  drawSelection(currentSeries[currentSelectedIndex]);
+  syncNowMarkerEffects();
 }
 
 function css(name) {
@@ -1025,6 +1031,28 @@ function getInitialSelectedIndex() {
   let idx = Math.round(minute / 10);
   idx = Math.max(0, Math.min(currentSeries.length - 1, idx));
   return idx;
+}
+
+function getInitialSelectedIndexWithRiver() {
+  const fallbackIndex = getInitialSelectedIndex();
+  if (!currentRiverSeries.length || !currentSeries.length) return fallbackIndex;
+
+  const targetMinute = currentSeries[fallbackIndex]?.minute ?? 0;
+  let closestIndex = -1;
+  let closestDistance = Infinity;
+
+  for (const riverPoint of currentRiverSeries) {
+    if (!Number.isFinite(riverPoint.level)) continue;
+    const seriesIndex = currentSeries.findIndex(point => point.minute === riverPoint.minute);
+    if (seriesIndex < 0) continue;
+    const distance = Math.abs(currentSeries[seriesIndex].minute - targetMinute);
+    if (distance < closestDistance) {
+      closestIndex = seriesIndex;
+      closestDistance = distance;
+    }
+  }
+
+  return closestIndex >= 0 ? closestIndex : fallbackIndex;
 }
 
 function getNowMarkerInfo() {
