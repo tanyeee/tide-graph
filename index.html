@@ -28,6 +28,7 @@
     --river:#0284c7;
     --now:#dc2626;
     --button-bg:#ffffff;
+    --control-surface:#eef2f7;
     --button-text:#111827;
     --shadow:0 6px 20px rgba(0,0,0,.04);
   }
@@ -48,6 +49,7 @@
       --river:#38bdf8;
       --now:#ef4444;
       --button-bg:#0f172a;
+      --control-surface:#111c31;
       --button-text:#e5edf7;
       --shadow:none;
     }
@@ -63,7 +65,10 @@
     background:transparent; border:0; border-radius:0;
     padding:0; box-shadow:none;
   }
-  .app-title-row { display:flex; align-items:center; justify-content:center; gap:5px; margin-bottom:2px; }
+  .app-title-row { display:grid; grid-template-columns:44px max-content 44px; column-gap:8px; align-items:center; justify-content:center; margin-bottom:2px; }
+  .title-spacer { width:44px; height:44px; }
+  .app-title-row h1 { grid-column:2; }
+  .app-title-row .date-info-anchor { grid-column:3; }
   h1 { margin:0; font-size:clamp(24px,3vw,34px); text-align:center; }
   .sub, .legend, .note { color:var(--muted); font-size:14px; line-height:1.7; }
   .sub { margin-top:18px; }
@@ -98,7 +103,7 @@
   }
   select { min-width:150px; height:44px; }
   .btns { display:flex; gap:8px; flex-wrap:wrap; }
-  .toggle { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:3px; min-width:116px; padding:3px; border:1px solid var(--border); border-radius:999px; background:var(--pill); }
+  .toggle { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:3px; min-width:116px; padding:3px; border:1px solid var(--border); border-radius:999px; background:var(--control-surface); }
   .toggle button { border:0; background:transparent; color:var(--muted); padding:8px 10px; border-radius:999px; font-weight:700; }
   .toggle button.active { background:var(--accent); color:#fff; }
   .range-row { display:flex; flex-wrap:wrap; align-items:end; gap:12px; margin-top:16px; margin-bottom:18px; }
@@ -118,10 +123,10 @@
     /* text-align centers the selected value in browsers that honor it on a
        closed <select> (incl. iOS Safari); text-align-last is the fallback
        property some engines use instead for the last (only, here) line. */
-    text-align:center; text-align-last:center;
+    text-align:center; text-align-last:center; background:var(--control-surface);
   }
   .refresh-wrap { margin-left:auto; }
-  .refresh-btn { min-width:64px; height:44px; border-radius:14px; font-size:22px; font-weight:700; padding:0 14px; }
+  .refresh-btn { min-width:64px; height:44px; border-radius:14px; font-size:22px; font-weight:700; padding:0 14px; background:var(--control-surface); }
   /* The explanation icon shares the date navigation's three columns, so it
      stays aligned with the central date/tide control at every breakpoint. */
   .date-nav-field {
@@ -147,13 +152,9 @@
   .date-info-btn[aria-expanded="true"] .date-info-icon {
     border-color:var(--accent); color:var(--accent); background:var(--accent-soft);
   }
-  /* Centered under the button (rather than right/left-anchored) so it stays
-     clear of the viewport edge whichever side the button ends up closer to
-     — see the position-tuning commit's write-up for the 375px/1100px
-     coordinate check that motivated centering over edge-anchoring. */
   .date-info-popover {
-    position:absolute; top:100%; left:50%; transform:translateX(-50%); z-index:5; margin-top:4px;
-    width:max-content; max-width:min(220px, calc(100vw - 32px));
+    position:absolute; top:100%; right:0; z-index:5; margin-top:4px;
+    width:min(260px, calc(100vw - 24px)); max-width:calc(100vw - 24px);
     padding:10px 14px; border-radius:12px; text-align:center;
     background:var(--pill); border:1px solid var(--border); box-shadow:var(--shadow);
     color:var(--text); font-size:13px; line-height:1.6;
@@ -326,6 +327,9 @@
     .date-nav-field { --date-nav-cols:76px minmax(0, 1fr) 76px; --date-nav-gap:8px; }
   }
   @media (max-width: 560px) {
+    .app-title-row { grid-template-columns:36px max-content 36px; column-gap:4px; }
+    .title-spacer { width:36px; height:44px; }
+    .date-info-btn { width:36px; }
     h1 { font-size:24px; white-space:nowrap; }
     .date-nav-field { --date-nav-cols:64px minmax(0,1fr) 64px; --date-nav-gap:4px; }
     .date-nav { width:100%; }
@@ -379,13 +383,14 @@
 <div class="wrap">
   <div class="card">
     <div class="app-title-row">
+      <span class="title-spacer" aria-hidden="true"></span>
       <h1>日立 潮位＆河川水位グラフ</h1>
       <div class="date-info-anchor">
         <button id="dateInfoButton" class="date-info-btn" type="button" aria-label="日付変更の説明" aria-expanded="false" aria-describedby="dateInfoPopover">
           <span class="date-info-icon" aria-hidden="true">ⓘ</span>
         </button>
         <div id="dateInfoPopover" class="date-info-popover" role="tooltip" hidden>
-          日付をクリックまたはタップするとカレンダーから変更可能
+          日付を選択すると、カレンダーから変更できます。
         </div>
       </div>
     </div>
@@ -471,6 +476,9 @@
       <p>【河川水位観測地点】久慈川水系および涸沼・那珂川水系の汽水域にある観測地点から、表示する地点を選択できます。</p>
       <hr>
       <p>【更新】更新ボタンを押すと現在時刻に戻り、最新のデータを取得します。</p>
+    </details>
+    <details id="dataSources" class="river-footnote">
+      <summary><span>データ・出典</span><span class="function-intro-chevron" aria-hidden="true">∨</span></summary>
       <div id="dataStatus" class="note data-status" role="status" aria-live="polite">
         潮位データを読み込んでいます…
       </div>
@@ -1230,8 +1238,9 @@ function drawChart() {
   // clear of extrema callouts and the value cards regardless of the canvas's
   // rendered scale. The selected-time readout now follows the live marker.
   const renderedScale = chart.clientWidth / W || 1;
+  const cardClearanceCss = window.matchMedia('(min-width: 781px)').matches ? 47 : 22;
   const labelTopCss = chartMetaEl
-    ? chartMetaEl.offsetTop - 22 - 28 * renderedScale
+    ? chartMetaEl.offsetTop - cardClearanceCss - 28 * renderedScale
     : (H - 330) * renderedScale;
   const chartBottom = Math.max(180, H - labelTopCss / renderedScale + 5);
   const m = {
@@ -1595,7 +1604,7 @@ function drawSelection(point, updateMeta = true) {
   drawNowIndicator();
 
   if (updateMeta) {
-    selectedTimeEl.textContent = point.label.slice(-5);
+    selectedTimeEl.textContent = point.label.slice(-5).replace(/^0/, '');
     selectedHeightEl.textContent = `${Math.round(point.height)} cm`;
     if (isActualRiverMode()) {
       // 実水位 mode: show the raw measured level (already in meters)
