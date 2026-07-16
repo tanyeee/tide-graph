@@ -63,12 +63,21 @@
     background:transparent; border:0; border-radius:0;
     padding:0; box-shadow:none;
   }
-  h1 { margin:0 0 4px; font-size:clamp(24px,3vw,34px); text-align:center; }
+  .app-title-row { display:flex; align-items:center; justify-content:center; gap:5px; margin-bottom:2px; }
+  h1 { margin:0; font-size:clamp(24px,3vw,34px); text-align:center; }
   .sub, .legend, .note { color:var(--muted); font-size:14px; line-height:1.7; }
   .sub { margin-top:18px; }
   .legend { font-size:14px; margin-top:16px; }
   .river-footnote { color:#60a5fa; font-size:14px; line-height:1.7; margin-top:18px; }
-  .river-footnote summary { cursor:pointer; font-weight:700; }
+  .river-footnote summary {
+    display:flex; align-items:center; justify-content:space-between; width:100%;
+    padding:9px 12px; cursor:pointer; font-weight:700; list-style:none;
+    border-bottom:1px solid rgba(96,165,250,.45); background:rgba(96,165,250,.07);
+  }
+  .river-footnote summary::-webkit-details-marker { display:none; }
+  .river-footnote summary::marker { content:""; }
+  .river-footnote .function-intro-chevron { font-size:18px; line-height:1; transition:transform .15s ease; }
+  .river-footnote[open] .function-intro-chevron { transform:rotate(180deg); }
   .river-footnote[open] summary { margin-bottom:8px; }
   .river-footnote hr { border:0; border-top:1px solid rgba(96,165,250,.55); margin:10px 0; }
   .river-footnote p { margin:0; }
@@ -77,7 +86,7 @@
   .data-status[data-state="error"], .river-status[data-state="error"] { color:#dc2626; font-weight:700; }
   .data-status[data-state="warning"], .river-status[data-state="warning"] { color:#d97706; font-weight:700; }
   .controls {
-    display:flex; flex-wrap:wrap; gap:12px; align-items:end; justify-content:center; margin-bottom:8px;
+    display:flex; flex-wrap:wrap; gap:12px; align-items:end; justify-content:center; margin-bottom:4px;
   }
   .field {
     display:flex; flex-direction:column; gap:6px; min-width:0;
@@ -116,15 +125,11 @@
   /* The explanation icon shares the date navigation's three columns, so it
      stays aligned with the central date/tide control at every breakpoint. */
   .date-nav-field {
-    width:min(100%, 520px);
+    width:min(100%, 640px);
     --date-nav-cols:88px minmax(0, 1fr) 88px;
     --date-nav-gap:12px;
   }
-  .date-nav-info-row {
-    display:grid; grid-template-columns:var(--date-nav-cols); gap:var(--date-nav-gap);
-    position:relative; min-height:38px; justify-content:start; margin-bottom:-8px;
-  }
-  .date-info-anchor { position:absolute; top:4px; }
+  .date-info-anchor { position:relative; flex:0 0 auto; }
   .date-info-btn {
     flex:0 0 auto; width:44px; height:44px; padding:0;
     border:0; background:transparent; cursor:pointer;
@@ -154,10 +159,10 @@
     color:var(--text); font-size:13px; line-height:1.6;
   }
   .date-info-popover[hidden] { display:none; }
-  .date-nav { display:grid; grid-template-columns:var(--date-nav-cols); align-items:center; gap:var(--date-nav-gap); justify-content:start; }
+  .date-nav { display:grid; grid-template-columns:var(--date-nav-cols); align-items:center; gap:var(--date-nav-gap); justify-content:center; }
   /* Date navigation buttons name their destination date directly. */
   .date-nav > button {
-    min-width:0; min-height:48px; padding:8px 6px; font-weight:700; border-radius:14px;
+    min-width:0; min-height:44px; padding:8px 6px; font-weight:700; border-radius:14px;
     white-space:nowrap;
   }
   .nav-step { font-size:10px; font-weight:600; line-height:1.15; }
@@ -171,9 +176,10 @@
   .date-display {
     appearance:none; border:0; background:transparent; padding:0;
     font:inherit; cursor:pointer; text-align:center; width:100%; height:100%;
-    display:flex; align-items:center; justify-content:center; gap:12px; white-space:nowrap;
+    display:flex; align-items:center; justify-content:center; gap:7px; white-space:nowrap;
   }
   .date-display-value { font-size:20px; font-weight:800; color:var(--text); }
+  .date-separator { color:var(--muted); font-size:16px; font-weight:400; }
   .date-tide-name { color:var(--highlight); font-size:24px; font-weight:800; letter-spacing:.08em; line-height:1.1; }
   .date-nav input[type="date"] {
     position:absolute; inset:0; width:100%; height:100%; margin:0; padding:0; border:0;
@@ -255,21 +261,27 @@
     .now-pulse { display:none !important; animation:none; }
   }
   .chart-controls {
-    position:absolute; left:20px; right:20px; bottom:48px; z-index:2;
+    position:absolute; left:20px; right:20px; bottom:36px; z-index:2;
     display:flex; justify-content:center;
   }
   .chart-meta {
     position:absolute; left:20px; right:20px; bottom:110px; z-index:2;
-    display:grid; grid-template-columns:64px repeat(2,minmax(0,1fr)) 64px; align-items:center; gap:12px; margin:0;
+    display:grid; grid-template-columns:64px minmax(0,1fr) 64px; align-items:center; gap:12px; margin:0;
+  }
+  .chart-meta .value-card {
+    display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); align-items:stretch;
+    background:rgba(7,30,54,.26); border:1px solid rgba(255,255,255,.18); border-radius:12px;
+    box-shadow:none;
   }
   .chart-meta .pill {
-    background:transparent; border:0;
-    padding:6px 2px;
+    background:transparent; border:0; border-radius:0;
+    padding:6px 8px;
   }
   .chart-meta .pill .k {
     margin-bottom:2px; font-size:18px; font-weight:700; opacity:1;
   }
   .chart-meta .ocean-pill .k { color:#FFF4B8; }
+  .chart-meta .river-pill { border-left:1px solid rgba(255,255,255,.18); }
   .chart-meta .river-pill .k { color:#CDEFFF; }
   .chart-meta .pill .v { font-size:24px; }
   .chart-meta .chart-step-button {
@@ -305,7 +317,7 @@
     body { padding:12px; }
     .card { padding:0; border-radius:0; }
     .chart-stack { width:calc(100% + 24px); margin-left:-12px; margin-right:-12px; }
-    .chart-meta { left:16px; right:16px; bottom:82px; grid-template-columns:56px repeat(2,minmax(0,1fr)) 56px; gap:10px; }
+    .chart-meta { left:16px; right:16px; bottom:82px; grid-template-columns:56px minmax(0,1fr) 56px; gap:10px; }
     .chart-meta .pill .v { font-size:22px; }
     .chart-meta .pill .k { font-size:17px; }
     .meta { grid-template-columns:repeat(3,minmax(0,1fr)); }
@@ -316,7 +328,6 @@
   @media (max-width: 560px) {
     h1 { font-size:24px; white-space:nowrap; }
     .date-nav-field { --date-nav-cols:64px minmax(0,1fr) 64px; --date-nav-gap:4px; }
-    .date-nav-info-row { width:100%; }
     .date-nav { width:100%; }
     .date-nav > button { min-height:44px; padding:8px 2px; font-size:13px; }
     .date-display { gap:7px; }
@@ -344,13 +355,13 @@
     .river-field select { padding:10px 8px; font-size:16px; }
     .refresh-wrap { order:3; margin-left:0; }
     .meta { grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
-    .chart-meta { left:10px; right:10px; bottom:70px; grid-template-columns:52px repeat(2,minmax(0,1fr)) 52px; gap:6px; }
+    .chart-meta { left:10px; right:10px; bottom:70px; grid-template-columns:52px minmax(0,1fr) 52px; gap:6px; }
     .pill { min-width:0; padding:10px; }
     .pill .v { font-size:16px; white-space:nowrap; }
     .chart-meta .pill .v { font-size:20px; }
     .chart-meta .pill .k { font-size:13px; white-space:nowrap; }
     #selectedHeight { font-size:20px; }
-    .chart-controls { left:10px; right:10px; bottom:38px; }
+    .chart-controls { left:10px; right:10px; bottom:28px; }
     .chart-step-button { min-height:56px; border-radius:16px; }
     .chart-step-button .nav-arrow { font-size:30px; }
     .chart-step-button .nav-step { font-size:10px; }
@@ -359,7 +370,7 @@
     .chart-interaction-hint { bottom:10px; font-size:10px; }
   }
   @media (max-width: 360px) {
-    .chart-meta { grid-template-columns:44px repeat(2,minmax(0,1fr)) 44px; gap:4px; }
+    .chart-meta { grid-template-columns:44px minmax(0,1fr) 44px; gap:4px; }
     .chart-meta .pill .k { font-size:11px; }
   }
 </style>
@@ -367,24 +378,24 @@
 <body>
 <div class="wrap">
   <div class="card">
-    <h1>日立 潮位＆河川水位グラフ</h1>
+    <div class="app-title-row">
+      <h1>日立 潮位＆河川水位グラフ</h1>
+      <div class="date-info-anchor">
+        <button id="dateInfoButton" class="date-info-btn" type="button" aria-label="日付変更の説明" aria-expanded="false" aria-describedby="dateInfoPopover">
+          <span class="date-info-icon" aria-hidden="true">ⓘ</span>
+        </button>
+        <div id="dateInfoPopover" class="date-info-popover" role="tooltip" hidden>
+          日付をクリックまたはタップするとカレンダーから変更可能
+        </div>
+      </div>
+    </div>
 
     <div class="controls">
       <div class="field date-nav-field">
-        <div class="date-nav-info-row">
-          <div class="date-info-anchor">
-            <button id="dateInfoButton" class="date-info-btn" type="button" aria-label="日付変更の説明" aria-expanded="false" aria-describedby="dateInfoPopover">
-              <span class="date-info-icon" aria-hidden="true">ⓘ</span>
-            </button>
-            <div id="dateInfoPopover" class="date-info-popover" role="tooltip" hidden>
-              日付をクリックまたはタップするとカレンダーから変更可能
-            </div>
-          </div>
-        </div>
         <div class="date-nav">
           <button id="btnPrev1" type="button" aria-label="前日" disabled>＜</button>
           <div class="date-display-wrap">
-            <button id="datePickerButton" class="date-display" type="button" aria-label="日付を選択" disabled><span id="dateDisplay" class="date-display-value">-</span><span id="tideName" class="date-tide-name" aria-label="潮名">-</span></button>
+            <button id="datePickerButton" class="date-display" type="button" aria-label="日付を選択" disabled><span id="dateDisplay" class="date-display-value">-</span><span class="date-separator" aria-hidden="true">｜</span><span id="tideName" class="date-tide-name" aria-label="潮名">-</span></button>
             <input id="dateInput" type="date" disabled tabindex="-1" aria-hidden="true">
           </div>
           <button id="btnNext1" type="button" aria-label="翌日" disabled>＞</button>
@@ -398,8 +409,10 @@
       <div id="selectedTimeReadout" class="chart-selected-time"><span id="selectedTime" class="selected-time-value">-</span></div>
       <div class="meta chart-meta">
         <button id="btnPrev10" class="chart-step-button" type="button" aria-label="10分前"><span class="nav-step">10分</span><span class="nav-arrow">&lt;</span></button>
-        <div class="pill ocean-pill"><div class="k">海洋潮位</div><div class="v" id="selectedHeight">-</div></div>
-        <div class="pill river-pill"><div class="k">河川水位<span id="riverModeLabel">（相対）</span> <sup class="footnote-mark" id="riverFootnoteMark">※1</sup></div><div class="v" id="selectedRiverHeight">-</div></div>
+        <div class="value-card">
+          <div class="pill ocean-pill"><div class="k">海洋潮位</div><div class="v" id="selectedHeight">-</div></div>
+          <div class="pill river-pill"><div class="k">河川水位<span id="riverModeLabel">（相対）</span><sup class="footnote-mark" id="riverFootnoteMark">※1</sup></div><div class="v" id="selectedRiverHeight">-</div></div>
+        </div>
         <button id="btnNext10" class="chart-step-button" type="button" aria-label="10分後"><span class="nav-step">10分</span><span class="nav-arrow">&gt;</span></button>
       </div>
       <div class="chart-controls" aria-label="グラフの凡例">
@@ -410,7 +423,7 @@
           <span class="chart-legend-item"><span class="legend-symbol selection" aria-hidden="true"></span>選択時刻</span>
         </div>
       </div>
-      <div class="chart-interaction-hint">グラフ内をタップまたはクリックすると好きな時刻を選択できます。</div>
+      <div class="chart-interaction-hint">グラフ上で時刻を選択できます。</div>
     </div>
 
     <div class="range-row">
@@ -451,24 +464,24 @@
     </div>
 
     <details id="riverFootnoteText" class="river-footnote">
-      <summary>機能紹介</summary>
+      <summary><span>機能紹介</span><span class="function-intro-chevron" aria-hidden="true">∨</span></summary>
       <hr>
       <p>【河川水位モード】<sup>※1</sup><br>相対：河川水位の変化が海洋潮位に合うよう自動調整した参考値です。河川の潮位変化が海洋潮位に対してどの程度遅れているかを確認するのに適しています。<br>実水位：国土交通省が公開している河川水位データの値を表示します。河川が増水しているかどうかを確認するのに適しています。なお、観測地点によっては、平常時でも水位がマイナスの値を示す場合があります。</p>
       <hr>
       <p>【河川水位観測地点】久慈川水系および涸沼・那珂川水系の汽水域にある観測地点から、表示する地点を選択できます。</p>
       <hr>
       <p>【更新】更新ボタンを押すと現在時刻に戻り、最新のデータを取得します。</p>
+      <div id="dataStatus" class="note data-status" role="status" aria-live="polite">
+        潮位データを読み込んでいます…
+      </div>
+      <div id="riverStatus" class="note river-status" role="status" aria-live="polite"></div>
+      <div class="legend">
+        出典<br>
+        潮位：<a href="https://www.data.jma.go.jp/kaiyou/db/tide/suisan/suisan.php?stn=D1" target="_blank" rel="noopener noreferrer">気象庁「潮位表 日立」</a><br>
+        潮名：<a href="https://www.mirc.jp/online/w/w-tide/knowledge/SN-det.html" target="_blank" rel="noopener noreferrer">日本水路協会 MIRC「科学的な潮名の決め方」</a><br>
+        水位：<a href="https://tanyeee.github.io/kuji-waterlevel/" target="_blank" rel="noopener noreferrer">国土交通省データを利用した久慈川水位ビューア</a>
+      </div>
     </details>
-    <div id="dataStatus" class="note data-status" role="status" aria-live="polite">
-      潮位データを読み込んでいます…
-    </div>
-    <div id="riverStatus" class="note river-status" role="status" aria-live="polite"></div>
-    <div class="legend">
-      出典<br>
-      潮位：<a href="https://www.data.jma.go.jp/kaiyou/db/tide/suisan/suisan.php?stn=D1" target="_blank" rel="noopener noreferrer">気象庁「潮位表 日立」</a><br>
-      潮名：<a href="https://www.mirc.jp/online/w/w-tide/knowledge/SN-det.html" target="_blank" rel="noopener noreferrer">日本水路協会 MIRC「科学的な潮名の決め方」</a><br>
-      水位：<a href="https://tanyeee.github.io/kuji-waterlevel/" target="_blank" rel="noopener noreferrer">国土交通省データを利用した久慈川水位ビューア</a>
-    </div>
   </div>
 </div>
 
@@ -511,8 +524,6 @@ const dateInput = document.getElementById('dateInput');
 const dateDisplayEl = document.getElementById('dateDisplay');
 const dateInfoButton = document.getElementById('dateInfoButton');
 const dateInfoPopover = document.getElementById('dateInfoPopover');
-const dateNavFieldEl = document.querySelector('.date-nav-field');
-const dateInfoAnchorEl = document.querySelector('.date-info-anchor');
 const btn1 = document.getElementById('btn1');
 const btn2 = document.getElementById('btn2');
 const btnPrev1 = document.getElementById('btnPrev1');
@@ -779,13 +790,8 @@ function addDays(dateStr, add) {
 // Updates the central date plus its tide name, then gives each adjacent-day
 // button the concrete date it will select.
 function positionDateInfoButton() {
-  if (!dateNavFieldEl || !dateInfoAnchorEl) return;
-  const fieldRect = dateNavFieldEl.getBoundingClientRect();
-  const dateRect = dateDisplayEl.getBoundingClientRect();
-  // The clickable target is 44px wide while the visible icon is 20px wide.
-  // Put the visible icon 5px to the right of the date itself.
-  const left = dateRect.right - fieldRect.left - 7;
-  dateInfoAnchorEl.style.left = `${Math.max(0, Math.min(left, fieldRect.width - 44))}px`;
+  // The information button now lives beside the title, so it no longer needs
+  // to be positioned relative to the date navigation columns.
 }
 
 function updateDateDisplay() {
@@ -934,14 +940,14 @@ function riverYAtMinute(minute, yFromRiverLevel) {
 }
 
 function drawExtremaLabels(xFromMinute, yFromHeight, yFromRiverLevel, m, plotW) {
-  const boxW = 116;
-  const boxH = 66;
-  const pointerH = 9;
+  const boxW = 104;
+  const boxH = 54;
+  const pointerH = 8;
   const lineGap = 5;
-  const inset = 4;
+  const inset = 8;
   ctx.save();
-  ctx.lineWidth = 1.5;
-  ctx.font = 'bold 27px sans-serif';
+  ctx.lineWidth = 1;
+  ctx.font = 'bold 24px sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
 
@@ -967,8 +973,8 @@ function drawExtremaLabels(xFromMinute, yFromHeight, yFromRiverLevel, m, plotW) 
 
     // A muted blue, only slightly darker than --chart-bg, retains contrast
     // without making the labels look like heavy dark panels.
-    ctx.fillStyle = 'rgba(20, 68, 98, .9)';
-    ctx.strokeStyle = 'rgba(255, 255, 255, .78)';
+    ctx.fillStyle = 'rgba(20, 68, 98, .82)';
+    ctx.strokeStyle = 'rgba(255, 255, 255, .55)';
     ctx.beginPath();
     roundedRectPath(boxX, boxY, boxW, boxH, 7);
     ctx.fill();
@@ -982,10 +988,10 @@ function drawExtremaLabels(xFromMinute, yFromHeight, yFromRiverLevel, m, plotW) 
     ctx.stroke();
 
     ctx.fillStyle = '#fff';
-    ctx.fillText(item.time, boxX + boxW / 2, boxY + 21);
-    ctx.font = 'bold 23px sans-serif';
-    ctx.fillText(`${Math.round(item.height)} cm`, boxX + boxW / 2, boxY + 49);
-    ctx.font = 'bold 27px sans-serif';
+    ctx.fillText(item.time, boxX + boxW / 2, boxY + 18);
+    ctx.font = '20px sans-serif';
+    ctx.fillText(`${Math.round(item.height)} cm`, boxX + boxW / 2, boxY + 39);
+    ctx.font = 'bold 24px sans-serif';
   });
   ctx.restore();
 }
@@ -1295,9 +1301,10 @@ function drawChart() {
   // theme's --grid/--muted) to stay legible in both light and dark mode.
   const gridColor = 'rgba(255,255,255,0.3)';
   const textMuted = 'rgba(255,255,255,0.85)';
+  const tideAxisText = 'rgba(255,244,184,.78)';
+  const riverAxisText = 'rgba(205,239,255,.78)';
   const lineColor = css('--highlight');
   const riverColor = css('--river');
-  const selectLine = css('--muted');
   const selectPoint = css('--highlight');
 
   ctx.strokeStyle = gridColor;
@@ -1312,22 +1319,22 @@ function drawChart() {
     ctx.lineTo(W - m.right, y);
     ctx.stroke();
 
-    ctx.fillStyle = textMuted;
+    ctx.fillStyle = tideAxisText;
     ctx.font = '28px sans-serif';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'middle';
     ctx.fillText(formatMeters(val), m.left - 8, y);
   });
 
-  function drawAxisCaption(lines, x, y) {
-    ctx.fillStyle = textMuted;
+  function drawAxisCaption(lines, x, y, color) {
+    ctx.fillStyle = color;
     ctx.font = 'bold 22px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
     lines.forEach((line, index) => ctx.fillText(line, x, y + index * 26));
   }
 
-  drawAxisCaption(['海洋', '潮位', '(m)'], 36, 10);
+  drawAxisCaption(['海洋', '潮位', '(m)'], 36, 10, tideAxisText);
 
   // 実水位 mode's right-side axis: reuses the same font/style as the left
   // (tide) axis labels, per spec. Ticks come from axisTicks() (a "nice"
@@ -1336,13 +1343,13 @@ function drawChart() {
   if (isActualMode && currentRiverAxis) {
     axisTicks(currentRiverAxis.min, currentRiverAxis.max, 5).forEach(val => {
       const y = m.top + (currentRiverAxis.max - val) / (currentRiverAxis.max - currentRiverAxis.min) * plotH;
-      ctx.fillStyle = textMuted;
+      ctx.fillStyle = riverAxisText;
       ctx.font = '28px sans-serif';
       ctx.textAlign = 'left';
       ctx.textBaseline = 'middle';
       ctx.fillText(formatRiverMeters(val), W - m.right + 8, y);
     });
-    drawAxisCaption(['河川', '水位', '(m)'], W - 36, 10);
+    drawAxisCaption(['河川', '水位', '(m)'], W - 36, 10, riverAxisText);
   }
 
   const xStep = dayCount === 1 ? 3 : 6;
@@ -1431,7 +1438,7 @@ function drawChart() {
   // dashed line, so the dashed-line drawing that used to live here has been
   // removed.
 
-  return {selectLine, selectPoint};
+  return {selectPoint};
 }
 
 function currentMarkerPosition() {
@@ -1566,13 +1573,6 @@ function drawSelection(point, updateMeta = true) {
   const theme = drawChart();
   const x = plot.xFromMinute(point.minute);
   const y = plot.yFromHeight(point.height);
-
-  ctx.strokeStyle = theme.selectLine;
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.moveTo(x, plot.m.top);
-  ctx.lineTo(x, chart.height - plot.m.bottom);
-  ctx.stroke();
 
   ctx.fillStyle = theme.selectPoint;
   ctx.beginPath();
