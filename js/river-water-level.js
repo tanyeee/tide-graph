@@ -72,6 +72,7 @@ export const RIVER_STATIONS = Object.freeze({
 
 const INVALID_FLAGS = new Set(['-', '$', '#']);
 const TIMESTAMP_PATTERN = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/;
+export const RIVER_ARCHIVE_BASE_URL = 'https://raw.githubusercontent.com/tanyeee/kuji-waterlevel-data/main/data';
 
 export function normalizeRiverPayload(payload) {
   if (!payload || !Array.isArray(payload.records)) {
@@ -94,6 +95,70 @@ export function normalizeRiverPayload(payload) {
     .sort((a, b) => a.timestamp.localeCompare(b.timestamp));
 
   return { meta: payload.meta || {}, records };
+}
+
+function dateFromMinute(dateString, minute) {
+  const [year, month, day] = dateParts(dateString);
+  const value = new Date(Date.UTC(year, month - 1, day, 0, minute));
+  const pad = number => String(number).padStart(2, '0');
+  return `${value.getUTCFullYear()}-${pad(value.getUTCMonth() + 1)}-${pad(value.getUTCDate())}T${pad(value.getUTCHours())}:${pad(value.getUTCMinutes())}`;
+}
+
+export function normalizeDailyRiverArchive(payload, stationId) {
+  if (!payload || payload.schemaVersion !== 1 || typeof payload.date !== 'string' || !Number.isInteger(payload.stepMinutes)) {
+    throw new TypeError('河川水位の日別アーカイブ形式が正しくありません。');
+  }
+  const station = payload.stations?.[stationId];
+  if (!station || !Array.isArray(station.values)) return [];
+  const flags = station.flags || {};
+  return station.values.flatMap((value, index) => {
+    const flag = flags[String(index)] || '';
+    if (!Number.isFinite(value) || INVALID_FLAGS.has(flag)) return [];
+    return [{
+      timestamp: dateFromMinute(payload.date, index * payload.stepMinutes),
+      value,
+      flag,
+      resolution: `${payload.stepMinutes}min-archive`
+    }];
+  });
+}
+
+export function normalizeHourlyRiverArchive(payload, stationId) {
+  if (!payload || payload.schemaVersion !== 1 || payload.station !== stationId || !Number.isInteger(payload.year) || !Array.isArray(payload.values)) {
+    throw new TypeError('河川水位の1時間アーカイブ形式が正しくありません。');
+  }
+  const flags = payload.flags || {};
+  return payload.values.flatMap((value, index) => {
+    const flag = flags[String(index)] || '';
+    if (!Number.isFinite(value) || INVALID_FLAGS.has(flag)) return [];
+    return [{
+      timestamp: dateFromMinute(`${payload.year}-01-01`, index * payload.stepMinutes),
+      value,
+      flag,
+      resolution: `${payload.stepMinutes}min-archive`
+    }];
+  });
+}
+
+export function mergeRiverRecords(...sources) {
+  const byTimestamp = new Map();
+  for (const records of sources) {
+    for (const record of records || []) {
+      if (record && TIMESTAMP_PATTERN.test(record.timestamp) && Number.isFinite(record.value)) {
+        byTimestamp.set(record.timestamp, record);
+      }
+    }
+  }
+  return [...byTimestamp.values()].sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+}
+
+export function riverArchiveDayUrl(dateString) {
+  const [year, month] = dateString.split('-');
+  return `${RIVER_ARCHIVE_BASE_URL}/10min/${year}/${month}/${dateString}.json`;
+}
+
+export function riverArchiveHourlyUrl(stationId, year) {
+  return `${RIVER_ARCHIVE_BASE_URL}/hourly/${stationId}/${year}.json`;
 }
 
 function timestampParts(value) {
