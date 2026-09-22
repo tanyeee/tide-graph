@@ -5,6 +5,9 @@ import {
   axisTicks,
   calculateRiverAxis,
   extendFixedRiverRange,
+  mergeRiverRecords,
+  normalizeDailyRiverArchive,
+  normalizeHourlyRiverArchive,
   normalizeRiverPayload,
   pairRiverWithTide,
   percentile,
@@ -26,6 +29,40 @@ test('filters invalid observations and keeps valid provisional values', () => {
     { timestamp: 'bad', value: 1.5, flag: '' }
   ] });
   assert.deepEqual(payload.records.map(record => record.value), [1.2, 1.3]);
+});
+
+test('expands compact daily archives onto JST timestamps and preserves gaps', () => {
+  const records = normalizeDailyRiverArchive({
+    schemaVersion: 1,
+    date: '2026-09-20',
+    stepMinutes: 10,
+    stations: { a: { values: [1.2, null, 1.4], flags: { 2: '*' } } }
+  }, 'a');
+  assert.deepEqual(records, [
+    { timestamp: '2026-09-20T00:00', value: 1.2, flag: '', resolution: '10min-archive' },
+    { timestamp: '2026-09-20T00:20', value: 1.4, flag: '*', resolution: '10min-archive' }
+  ]);
+});
+
+test('expands compact hourly archives across day boundaries', () => {
+  const values = Array(26).fill(null);
+  values[0] = 0.5;
+  values[25] = 0.7;
+  const records = normalizeHourlyRiverArchive({
+    schemaVersion: 1,
+    year: 2026,
+    stepMinutes: 60,
+    station: 'a',
+    values
+  }, 'a');
+  assert.equal(records[0].timestamp, '2026-01-01T00:00');
+  assert.equal(records[1].timestamp, '2026-01-02T01:00');
+});
+
+test('merges archive layers with later, higher-resolution data winning', () => {
+  const hourly = [{ timestamp: '2026-09-20T01:00', value: 1, resolution: '60min-archive' }];
+  const recent = [{ timestamp: '2026-09-20T01:00', value: 2, resolution: '10min' }];
+  assert.deepEqual(mergeRiverRecords(hourly, recent), recent);
 });
 
 test('selects records inside a one or two day half-open window', () => {

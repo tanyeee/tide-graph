@@ -487,7 +487,7 @@
         出典<br>
         潮位：<a href="https://www.data.jma.go.jp/kaiyou/db/tide/suisan/suisan.php?stn=D1" target="_blank" rel="noopener noreferrer">気象庁「潮位表 日立」</a><br>
         潮名：<a href="https://www.mirc.jp/online/w/w-tide/knowledge/SN-det.html" target="_blank" rel="noopener noreferrer">日本水路協会 MIRC「科学的な潮名の決め方」</a><br>
-        水位：<a href="https://tanyeee.github.io/kuji-waterlevel/" target="_blank" rel="noopener noreferrer">国土交通省データを利用した久慈川水位ビューア</a>
+        水位：<a href="https://tanyeee.github.io/kuji-waterlevel/" target="_blank" rel="noopener noreferrer">国土交通省データを利用した久慈川水位ビューア</a>・<a href="https://github.com/tanyeee/kuji-waterlevel-data" target="_blank" rel="noopener noreferrer">長期水位アーカイブ</a>
       </div>
     </details>
   </div>
@@ -505,9 +505,14 @@ import {
   axisTicks,
   calculateRiverAxis,
   extendFixedRiverRange,
+  mergeRiverRecords,
+  normalizeDailyRiverArchive,
+  normalizeHourlyRiverArchive,
   riverLevelToDisplayHeight,
   normalizeRiverPayload,
   pairRiverWithTide,
+  riverArchiveDayUrl,
+  riverArchiveHourlyUrl,
   riverSeriesForWindow
 } from './js/river-water-level.js';
 import { getTimes, getMoonTimes, getMoonIllumination } from './js/suncalc.js';
@@ -566,6 +571,8 @@ let currentRiverAxis = null;
 let riverRequestId = 0;
 let nowMarkerRefreshTimer = null;
 const yearCache = new Map();
+const riverDailyArchiveCache = new Map();
+const riverHourlyArchiveCache = new Map();
 const reducedMotionQuery = window.matchMedia?.('(prefers-reduced-motion: reduce)');
 
 // River display mode: 'relative' (default) auto-calibrates the river series
@@ -668,6 +675,79 @@ async function fetchJson(url) {
   return response.json();
 }
 
+async function fetchJsonOptional(url) {
+  const response = await fetch(url, { cache: 'no-cache' });
+  if (response.status === 404) return null;
+  if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
+  return response.json();
+}
+
+async function loadRiverDailyArchive(dateString) {
+  if (riverDailyArchiveCache.has(dateString)) return riverDailyArchiveCache.get(dateString);
+  const payload = await fetchJsonOptional(riverArchiveDayUrl(dateString));
+  // Cache immutable files only. A missing file may appear after the 48-hour
+  // correction window, so a 404 is deliberately not cached.
+  if (payload) riverDailyArchiveCache.set(dateString, payload);
+  return payload;
+}
+
+async function loadRiverHourlyArchive(stationId, year) {
+  const key = `${stationId}:${year}`;
+  if (riverHourlyArchiveCache.has(key)) return riverHourlyArchiveCache.get(key);
+  const payload = await fetchJsonOptional(riverArchiveHourlyUrl(stationId, year));
+  if (payload) riverHourlyArchiveCache.set(key, payload);
+  return payload;
+}
+
+function datesForWindow(startDate, days) {
+  return Array.from({ length: days }, (_, index) => addDays(startDate, index));
+}
+
+async function loadRiverRecordsForWindow(station, startDate, days) {
+  const dates = datesForWindow(startDate, days);
+  const [recentResult, ...dailyResults] = await Promise.allSettled([
+    fetchJson(station.url),
+    ...dates.map(loadRiverDailyArchive)
+  ]);
+
+  const recent = recentResult.status === 'fulfilled'
+    ? normalizeRiverPayload(recentResult.value)
+    : { meta: {}, records: [] };
+  const dailyRecords = [];
+  const archivedDates = new Set();
+  dailyResults.forEach((result, index) => {
+    if (result.status !== 'fulfilled' || !result.value) return;
+    archivedDates.add(dates[index]);
+    dailyRecords.push(...normalizeDailyRiverArchive(result.value, station.id));
+  });
+
+  const missingYears = [...new Set(
+    dates.filter(date => !archivedDates.has(date)).map(date => Number(date.slice(0, 4)))
+  )];
+  const hourlyResults = await Promise.allSettled(
+    missingYears.map(year => loadRiverHourlyArchive(station.id, year))
+  );
+  const hourlyRecords = hourlyResults.flatMap(result =>
+    result.status === 'fulfilled' && result.value
+      ? normalizeHourlyRiverArchive(result.value, station.id)
+      : []
+  ).filter(record => !archivedDates.has(record.timestamp.slice(0, 10)));
+
+  const displayedDates = new Set(dates);
+  const records = mergeRiverRecords(hourlyRecords, dailyRecords, recent.records)
+    .filter(record => displayedDates.has(record.timestamp.slice(0, 10)));
+  const resolutions = new Set(records.map(record => record.resolution));
+  return {
+    records,
+    meta: {
+      ...recent.meta,
+      dataset_start: records[0]?.timestamp,
+      dataset_end: records.at(-1)?.timestamp,
+      archive_resolutions: [...resolutions]
+    }
+  };
+}
+
 async function loadRiverStation(stationId) {
   const requestId = ++riverRequestId;
   riverRecords = [];
@@ -680,16 +760,18 @@ async function loadRiverStation(stationId) {
 
   const station = RIVER_STATIONS[stationId];
   if (!station) return;
-  setRiverStatus(`${station.name}の10分水位を読み込んでいます…`);
+  setRiverStatus(`${station.name}の水位を読み込んでいます…`);
   try {
-    const payload = normalizeRiverPayload(await fetchJson(station.url));
+    const payload = await loadRiverRecordsForWindow(station, dateInput.value, dayCount);
     if (requestId !== riverRequestId) return;
     riverRecords = payload.records;
     riverMeta = payload.meta;
     const start = riverMeta.dataset_start?.replace('T', ' ') || riverRecords[0]?.timestamp.replace('T', ' ');
     const end = riverMeta.dataset_end?.replace('T', ' ') || riverRecords.at(-1)?.timestamp.replace('T', ' ');
-    const windowHours = riverMeta.window_hours || 24;
-    setRiverStatus(`${station.name}：${start || '—'}〜${end || '—'}（10分観測、保持設定${windowHours}時間）`);
+    const resolutionText = riverMeta.archive_resolutions?.some(value => value.startsWith('10'))
+      ? '10分観測'
+      : '1時間観測';
+    setRiverStatus(`${station.name}：${start || '—'}〜${end || '—'}（${resolutionText}）`);
   } catch (error) {
     if (requestId !== riverRequestId) return;
     console.error(error);
@@ -1687,7 +1769,7 @@ function refresh(resetSelection = true) {
     ? riverSeriesForWindow(riverRecords, dateStr, dayCount)
     : [];
   if (riverStationSelect.value && riverRecords.length && !currentRiverSeries.length) {
-    setRiverStatus(`${RIVER_STATIONS[riverStationSelect.value].name}：選択範囲内に10分水位データがありません。`, 'warning');
+    setRiverStatus(`${RIVER_STATIONS[riverStationSelect.value].name}：選択範囲内に水位データがありません。`, 'warning');
   } else if (riverStationSelect.value && currentRiverSeries.length) {
     const station = RIVER_STATIONS[riverStationSelect.value];
     const start = riverMeta.dataset_start?.replace('T', ' ') || riverRecords[0]?.timestamp.replace('T', ' ');
@@ -1705,6 +1787,7 @@ btn1.addEventListener('click', () => {
   btn1.classList.add('active');
   btn2.classList.remove('active');
   refresh();
+  loadRiverStation(riverStationSelect.value);
 });
 
 btn2.addEventListener('click', () => {
@@ -1713,6 +1796,7 @@ btn2.addEventListener('click', () => {
   btn2.classList.add('active');
   btn1.classList.remove('active');
   refresh();
+  loadRiverStation(riverStationSelect.value);
 });
 
 
@@ -1721,6 +1805,7 @@ function shiftDateBy(days) {
   if (!dataMap[shifted]) return;
   dateInput.value = shifted;
   refresh();
+  loadRiverStation(riverStationSelect.value);
 }
 
 function moveSelection(step) {
@@ -1743,7 +1828,10 @@ riverStationSelect.addEventListener('change', () => {
 riverModeRelativeBtn.addEventListener('click', () => setRiverDisplayMode('relative'));
 riverModeActualBtn.addEventListener('click', () => setRiverDisplayMode('actual'));
 
-dateInput.addEventListener('change', refresh);
+dateInput.addEventListener('change', () => {
+  refresh();
+  loadRiverStation(riverStationSelect.value);
+});
 datePickerButton.addEventListener('click', openDatePicker);
 
 dateInfoButton.addEventListener('click', (event) => {
