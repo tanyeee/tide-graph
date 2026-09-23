@@ -13,6 +13,7 @@ import {
   percentile,
   riverLevelToDisplayHeight,
   riverSeriesForWindow,
+  shouldConnectRiverPoints,
   timestampToWindowMinute
 } from '../js/river-water-level.js';
 
@@ -73,6 +74,18 @@ test('selects records inside a one or two day half-open window', () => {
     { timestamp: '2026-07-12T00:00', value: 4 }
   ];
   assert.deepEqual(riverSeriesForWindow(records, '2026-07-10', 2).map(item => item.level), [2, 3]);
+});
+
+test('connects hourly river readings but leaves long missing periods disconnected', () => {
+  const hourly = riverSeriesForWindow([
+    { timestamp: '2026-07-10T00:00', value: 1, resolution: '60min-archive' },
+    { timestamp: '2026-07-10T01:00', value: 2, resolution: '60min-archive' },
+    { timestamp: '2026-07-10T04:00', value: 3, resolution: '60min-archive' }
+  ], '2026-07-10', 1);
+  assert.equal(shouldConnectRiverPoints(hourly[0], hourly[1]), true);
+  assert.equal(shouldConnectRiverPoints(hourly[1], hourly[2]), false);
+  assert.equal(shouldConnectRiverPoints({ minute: 0, resolution: '10min' }, { minute: 20, resolution: '10min' }), true);
+  assert.equal(shouldConnectRiverPoints({ minute: 0, resolution: '10min' }, { minute: 30, resolution: '10min' }), false);
 });
 
 test('calculates interpolated percentiles', () => {

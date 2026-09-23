@@ -513,7 +513,8 @@ import {
   pairRiverWithTide,
   riverArchiveDayUrl,
   riverArchiveHourlyUrl,
-  riverSeriesForWindow
+  riverSeriesForWindow,
+  shouldConnectRiverPoints
 } from './js/river-water-level.js';
 import { getTimes, getMoonTimes, getMoonIllumination } from './js/suncalc.js';
 import { getScientificTideName } from './js/tide-names.js';
@@ -1029,8 +1030,7 @@ function riverYAtMinute(minute, yFromRiverLevel) {
   if (after.minute === minute) return yFromRiverLevel(after.level);
   if (afterIndex === 0) return null;
   const before = currentRiverSeries[afterIndex - 1];
-  // Do not invent a line across a gap in the ten-minute observation feed.
-  if (after.minute - before.minute > 20) return null;
+  if (!shouldConnectRiverPoints(before, after)) return null;
   const ratio = (minute - before.minute) / (after.minute - before.minute);
   return yFromRiverLevel(before.level + (after.level - before.level) * ratio);
 }
@@ -1542,7 +1542,7 @@ function drawChart() {
     currentRiverSeries.forEach(point => {
       const x = xFromMinute(point.minute);
       const y = yFromRiverLevel(point.level);
-      if (!previous || point.minute - previous.minute > 20) ctx.moveTo(x, y);
+      if (!shouldConnectRiverPoints(previous, point)) ctx.moveTo(x, y);
       else ctx.lineTo(x, y);
       previous = point;
     });
