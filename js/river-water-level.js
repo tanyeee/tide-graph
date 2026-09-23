@@ -189,9 +189,22 @@ export function riverSeriesForWindow(records, startDate, days) {
     .map(record => ({
       minute: timestampToWindowMinute(record.timestamp, startDate),
       label: record.timestamp.replace('T', ' '),
-      level: record.value
+      level: record.value,
+      resolution: record.resolution || '10min'
     }))
     .filter(record => record.minute >= 0 && record.minute < windowMinutes);
+}
+
+export function shouldConnectRiverPoints(before, after) {
+  if (!before || !after) return false;
+  const interval = point => {
+    const match = /^(\d+)min(?:-archive)?$/.exec(point.resolution || '10min');
+    return match ? Number(match[1]) : 10;
+  };
+  const gap = after.minute - before.minute;
+  // Keep the existing allowance for one missing reading while respecting
+  // hourly observations. Longer gaps remain visibly disconnected.
+  return gap > 0 && gap <= 2 * Math.max(interval(before), interval(after));
 }
 
 // Linearly interpolates a value at `minute` from a series that is a
