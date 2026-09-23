@@ -6,6 +6,7 @@ import {
   axisTicks,
   calculateRiverAxis,
   extendFixedRiverRange,
+  freshestRiverPayload,
   mergeRiverRecords,
   normalizeDailyRiverArchive,
   normalizeHourlyRiverArchive,
@@ -23,6 +24,16 @@ test('all river stations use commit-free live Pages readings', () => {
   for (const [id, station] of Object.entries(RIVER_STATIONS)) {
     assert.equal(station.url, `${RIVER_LIVE_BASE_URL}/${id}/recent_10min.json`);
   }
+});
+
+test('uses the newest valid 10-minute source during live cutover', () => {
+  const row = (timestamp, value) => ({ timestamp, value, flag: '' });
+  const live = { records: [row('2026-09-23T09:40', 1.2)] };
+  const old = { records: [row('2026-09-23T09:50', 1.3)] };
+  assert.equal(freshestRiverPayload(live, old).records.at(-1).value, 1.3);
+  assert.equal(freshestRiverPayload(old, live).records.at(-1).value, 1.3);
+  assert.equal(freshestRiverPayload(live, { bad: true }).records.at(-1).value, 1.2);
+  assert.deepEqual(freshestRiverPayload(null, null).records, []);
 });
 
 test('keeps JST calendar timestamps independent from the viewer timezone', () => {

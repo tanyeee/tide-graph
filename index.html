@@ -501,15 +501,16 @@ import {
   validateTideRecords
 } from './js/tide-parser.js';
 import {
+  RIVER_LEGACY_BASE_URL,
   RIVER_STATIONS,
   axisTicks,
   calculateRiverAxis,
   extendFixedRiverRange,
+  freshestRiverPayload,
   mergeRiverRecords,
   normalizeDailyRiverArchive,
   normalizeHourlyRiverArchive,
   riverLevelToDisplayHeight,
-  normalizeRiverPayload,
   pairRiverWithTide,
   riverArchiveDayUrl,
   riverArchiveHourlyUrl,
@@ -706,25 +707,18 @@ function datesForWindow(startDate, days) {
 
 async function loadRiverRecordsForWindow(station, startDate, days) {
   const dates = datesForWindow(startDate, days);
-  const [recentResult, ...dailyResults] = await Promise.allSettled([
+  const [liveResult, legacyResult, ...dailyResults] = await Promise.allSettled([
     fetchJson(station.url),
+    fetchJson(`${RIVER_LEGACY_BASE_URL}/${station.id}/recent_10min.json`),
     ...dates.map(loadRiverDailyArchive)
   ]);
 
-  let recent = { meta: {}, records: [] };
-  try {
-    if (recentResult.status !== 'fulfilled') throw recentResult.reason;
-    recent = normalizeRiverPayload(recentResult.value);
-  } catch (error) {
-    // Keep the last Git snapshot as a read-only fallback if live Pages is down.
-    console.warn('Live river readings unavailable; trying the last repository snapshot.', error);
-    try {
-      const legacyUrl = `https://tanyeee.github.io/kuji-waterlevel/data/stations/${station.id}/recent_10min.json`;
-      recent = normalizeRiverPayload(await fetchJson(legacyUrl));
-    } catch (fallbackError) {
-      console.warn('Legacy river snapshot is unavailable.', fallbackError);
-    }
-  }
+  // Compare observation timestamps, not HTTP availability: the Pages schedule
+  // may run late while the old feed is still updating during migration.
+  const recent = freshestRiverPayload(
+    liveResult.status === 'fulfilled' ? liveResult.value : null,
+    legacyResult.status === 'fulfilled' ? legacyResult.value : null
+  );
   const dailyRecords = [];
   const archivedDates = new Set();
   dailyResults.forEach((result, index) => {
