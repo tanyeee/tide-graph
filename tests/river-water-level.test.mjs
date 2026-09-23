@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  RIVER_LIVE_BASE_URL,
   RIVER_STATIONS,
   axisTicks,
   calculateRiverAxis,
@@ -16,6 +17,13 @@ import {
   shouldConnectRiverPoints,
   timestampToWindowMinute
 } from '../js/river-water-level.js';
+
+test('all river stations use commit-free live Pages readings', () => {
+  assert.equal(Object.keys(RIVER_STATIONS).length, 6);
+  for (const [id, station] of Object.entries(RIVER_STATIONS)) {
+    assert.equal(station.url, `${RIVER_LIVE_BASE_URL}/${id}/recent_10min.json`);
+  }
+});
 
 test('keeps JST calendar timestamps independent from the viewer timezone', () => {
   assert.equal(timestampToWindowMinute('2026-07-10T00:00', '2026-07-10'), 0);

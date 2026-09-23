@@ -1,10 +1,12 @@
+export const RIVER_LIVE_BASE_URL = 'https://tanyeee.github.io/kuji-waterlevel-data/live/stations';
+
 export const RIVER_STATIONS = Object.freeze({
   'kuji-ohashi': Object.freeze({
     id: 'kuji-ohashi',
     name: '久慈大橋',
     riverId: 'kuji',
     riverName: '久慈川水系',
-    url: 'https://tanyeee.github.io/kuji-waterlevel/data/stations/kuji-ohashi/recent_10min.json',
+    url: `${RIVER_LIVE_BASE_URL}/kuji-ohashi/recent_10min.json`,
     // Fixed right-axis range (m) for "実水位" (actual level) display mode,
     // derived from ~10 years of station statistics. Not used by the default
     // "相対" (relative) mode, which keeps auto-calibrating via
@@ -16,7 +18,7 @@ export const RIVER_STATIONS = Object.freeze({
     name: '榊橋',
     riverId: 'kuji',
     riverName: '久慈川水系',
-    url: 'https://tanyeee.github.io/kuji-waterlevel/data/stations/sakakibashi/recent_10min.json',
+    url: `${RIVER_LIVE_BASE_URL}/sakakibashi/recent_10min.json`,
     // Tuned down from {min:-0.6,max:0.8}: the original upper bound (based on
     // full 10yr p99, which includes flood days) left quiet-period readings
     // riding high and small in the fixed axis. New bound = recent quiet-
@@ -33,7 +35,7 @@ export const RIVER_STATIONS = Object.freeze({
     name: '涸沼橋',
     riverId: 'hinuma-nakagawa',
     riverName: '涸沼・那珂川水系',
-    url: 'https://tanyeee.github.io/kuji-waterlevel/data/stations/hinuma-bashi/recent_10min.json',
+    url: `${RIVER_LIVE_BASE_URL}/hinuma-bashi/recent_10min.json`,
     // Tuned down from {min:0.2,max:1.4}: same rationale as sakakibashi.
     // New max = recent quiet-period max (~1.17m) + ~0.15m margin, rounded to
     // 0.1m. Lower bound left unchanged (already close to the quiet-period
@@ -45,7 +47,7 @@ export const RIVER_STATIONS = Object.freeze({
     name: '湊大橋',
     riverId: 'hinuma-nakagawa',
     riverName: '涸沼・那珂川水系',
-    url: 'https://tanyeee.github.io/kuji-waterlevel/data/stations/minato-ohashi/recent_10min.json',
+    url: `${RIVER_LIVE_BASE_URL}/minato-ohashi/recent_10min.json`,
     fixedRange: Object.freeze({ min: -0.2, max: 1.5 })
   }),
   'suifu-bashi': Object.freeze({
@@ -53,7 +55,7 @@ export const RIVER_STATIONS = Object.freeze({
     name: '水府橋',
     riverId: 'hinuma-nakagawa',
     riverName: '涸沼・那珂川水系',
-    url: 'https://tanyeee.github.io/kuji-waterlevel/data/stations/suifu-bashi/recent_10min.json',
+    url: `${RIVER_LIVE_BASE_URL}/suifu-bashi/recent_10min.json`,
     fixedRange: Object.freeze({ min: 0.3, max: 2.0 })
   }),
   'kunita-ohashi': Object.freeze({
@@ -61,7 +63,7 @@ export const RIVER_STATIONS = Object.freeze({
     name: '国田大橋',
     riverId: 'hinuma-nakagawa',
     riverName: '涸沼・那珂川水系',
-    url: 'https://tanyeee.github.io/kuji-waterlevel/data/stations/kunita-ohashi/recent_10min.json',
+    url: `${RIVER_LIVE_BASE_URL}/kunita-ohashi/recent_10min.json`,
     // Tuned down from {min:-0.6,max:1.1}: same rationale as sakakibashi.
     // New max = recent quiet-period max (~0.76m) + ~0.15m margin, rounded to
     // 0.1m. Lower bound left unchanged (already well clear of the
