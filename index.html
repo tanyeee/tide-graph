@@ -711,9 +711,20 @@ async function loadRiverRecordsForWindow(station, startDate, days) {
     ...dates.map(loadRiverDailyArchive)
   ]);
 
-  const recent = recentResult.status === 'fulfilled'
-    ? normalizeRiverPayload(recentResult.value)
-    : { meta: {}, records: [] };
+  let recent = { meta: {}, records: [] };
+  try {
+    if (recentResult.status !== 'fulfilled') throw recentResult.reason;
+    recent = normalizeRiverPayload(recentResult.value);
+  } catch (error) {
+    // Keep the last Git snapshot as a read-only fallback if live Pages is down.
+    console.warn('Live river readings unavailable; trying the last repository snapshot.', error);
+    try {
+      const legacyUrl = `https://tanyeee.github.io/kuji-waterlevel/data/stations/${station.id}/recent_10min.json`;
+      recent = normalizeRiverPayload(await fetchJson(legacyUrl));
+    } catch (fallbackError) {
+      console.warn('Legacy river snapshot is unavailable.', fallbackError);
+    }
+  }
   const dailyRecords = [];
   const archivedDates = new Set();
   dailyResults.forEach((result, index) => {
