@@ -1,5 +1,4 @@
 export const RIVER_LIVE_BASE_URL = 'https://tanyeee.github.io/kuji-waterlevel-data/live/stations';
-export const RIVER_LEGACY_BASE_URL = 'https://tanyeee.github.io/kuji-waterlevel/data/stations';
 
 export const RIVER_STATIONS = Object.freeze({
   'kuji-ohashi': Object.freeze({
@@ -98,22 +97,6 @@ export function normalizeRiverPayload(payload) {
     .sort((a, b) => a.timestamp.localeCompare(b.timestamp));
 
   return { meta: payload.meta || {}, records };
-}
-
-export function freshestRiverPayload(...payloads) {
-  let freshest = { meta: {}, records: [] };
-  for (const payload of payloads) {
-    if (!payload) continue;
-    try {
-      const candidate = normalizeRiverPayload(payload);
-      if ((candidate.records.at(-1)?.timestamp || '') > (freshest.records.at(-1)?.timestamp || '')) {
-        freshest = candidate;
-      }
-    } catch (error) {
-      // A malformed source must not hide a valid independent source.
-    }
-  }
-  return freshest;
 }
 
 function dateFromMinute(dateString, minute) {

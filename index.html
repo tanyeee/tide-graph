@@ -501,15 +501,14 @@ import {
   validateTideRecords
 } from './js/tide-parser.js';
 import {
-  RIVER_LEGACY_BASE_URL,
   RIVER_STATIONS,
   axisTicks,
   calculateRiverAxis,
   extendFixedRiverRange,
-  freshestRiverPayload,
   mergeRiverRecords,
   normalizeDailyRiverArchive,
   normalizeHourlyRiverArchive,
+  normalizeRiverPayload,
   riverLevelToDisplayHeight,
   pairRiverWithTide,
   riverArchiveDayUrl,
@@ -707,18 +706,20 @@ function datesForWindow(startDate, days) {
 
 async function loadRiverRecordsForWindow(station, startDate, days) {
   const dates = datesForWindow(startDate, days);
-  const [liveResult, legacyResult, ...dailyResults] = await Promise.allSettled([
+  const [liveResult, ...dailyResults] = await Promise.allSettled([
     fetchJson(station.url),
-    fetchJson(`${RIVER_LEGACY_BASE_URL}/${station.id}/recent_10min.json`),
     ...dates.map(loadRiverDailyArchive)
   ]);
 
-  // Compare observation timestamps, not HTTP availability: the Pages schedule
-  // may run late while the old feed is still updating during migration.
-  const recent = freshestRiverPayload(
-    liveResult.status === 'fulfilled' ? liveResult.value : null,
-    legacyResult.status === 'fulfilled' ? legacyResult.value : null
-  );
+  let recent = { meta: {}, records: [] };
+  if (liveResult.status === 'fulfilled') {
+    try {
+      recent = normalizeRiverPayload(liveResult.value);
+    } catch (error) {
+      // A malformed live payload must not crash the river overlay; the
+      // archive records below still cover the displayed window.
+    }
+  }
   const dailyRecords = [];
   const archivedDates = new Set();
   dailyResults.forEach((result, index) => {
