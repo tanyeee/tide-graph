@@ -398,8 +398,8 @@
   <p>国土交通省 水文水質データベースが自動取得を制限したため、2026年11月4日以降、河川水位は更新されていません。潮汐の情報は通常どおり表示しています。</p>
 </div>
 <script>
-  // 国交省 水文水質データベースの取得が再開したら active を false にする
-  const MLIT_OUTAGE = { active: true, since: '2026-11-04' };
+  // 国交省からデータを取得できなくなったときに true にする(停止中バナーを表示)
+  const MLIT_OUTAGE = { active: false, since: '2026-11-04' };
   document.getElementById('mlitOutageBanner').hidden = !MLIT_OUTAGE.active;
 </script>
 <div class="wrap">
@@ -509,7 +509,7 @@
         出典<br>
         潮位：<a href="https://www.data.jma.go.jp/kaiyou/db/tide/suisan/suisan.php?stn=D1" target="_blank" rel="noopener noreferrer">気象庁「潮位表 日立」</a><br>
         潮名：<a href="https://www.mirc.jp/online/w/w-tide/knowledge/SN-det.html" target="_blank" rel="noopener noreferrer">日本水路協会 MIRC「科学的な潮名の決め方」</a><br>
-        水位：<a href="https://tanyeee.github.io/kuji-waterlevel/" target="_blank" rel="noopener noreferrer">国土交通省データを利用した久慈川水位ビューア</a>・<a href="https://github.com/tanyeee/kuji-waterlevel-data" target="_blank" rel="noopener noreferrer">長期水位アーカイブ</a>
+        水位：国土交通省「川の防災情報」(<a href="https://tanyeee.github.io/kuji-waterlevel/" target="_blank" rel="noopener noreferrer">国土交通省データを利用した久慈川水位ビューア</a>・<a href="https://github.com/tanyeee/kuji-waterlevel-data" target="_blank" rel="noopener noreferrer">長期水位アーカイブ</a>経由)
       </div>
     </details>
   </div>
