@@ -55,6 +55,18 @@
     }
   }
   * { box-sizing:border-box; }
+  .mlit-outage-banner {
+    margin:-24px -24px 16px; padding:10px 16px;
+    background:#fbbf24; color:#1f1300; border-bottom:2px solid #b45309;
+    font-size:12px; line-height:1.5;
+  }
+  .mlit-outage-banner[hidden] { display:none; }
+  .mlit-outage-banner strong { display:block; font-size:14px; margin-bottom:2px; }
+  .mlit-outage-banner p { margin:0; max-width:1100px; margin-inline:auto; }
+  .mlit-outage-banner strong { max-width:1100px; margin-inline:auto; }
+  @media (prefers-color-scheme: dark) {
+    .mlit-outage-banner { background:#78350f; color:#fef3c7; border-bottom-color:#f59e0b; }
+  }
   body {
     margin:0; padding:24px;
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;
@@ -316,6 +328,7 @@
   }
   @media (max-width: 780px) {
     body { padding:12px; }
+    .mlit-outage-banner { margin:-12px -12px 12px; }
     .card { padding:0; border-radius:0; }
     .chart-stack { width:calc(100% + 24px); margin-left:-12px; margin-right:-12px; }
     .chart-meta { left:16px; right:16px; bottom:82px; grid-template-columns:56px minmax(0,1fr) 56px; gap:10px; }
@@ -380,6 +393,15 @@
 </style>
 </head>
 <body>
+<div id="mlitOutageBanner" class="mlit-outage-banner" role="alert" hidden>
+  <strong>⚠ 河川水位の表示は更新を停止しています</strong>
+  <p>国土交通省 水文水質データベースが自動取得を制限したため、2026年11月4日以降、河川水位は更新されていません。潮汐の情報は通常どおり表示しています。</p>
+</div>
+<script>
+  // 国交省 水文水質データベースの取得が再開したら active を false にする
+  const MLIT_OUTAGE = { active: true, since: '2026-11-04' };
+  document.getElementById('mlitOutageBanner').hidden = !MLIT_OUTAGE.active;
+</script>
 <div class="wrap">
   <div class="card">
     <div class="app-title-row">
