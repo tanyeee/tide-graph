@@ -1491,6 +1491,25 @@ function drawChart() {
   if (isActualMode && currentRiverAxis) {
     axisTicks(currentRiverAxis.min, currentRiverAxis.max, 5).forEach(val => {
       const y = m.top + (currentRiverAxis.max - val) / (currentRiverAxis.max - currentRiverAxis.min) * plotH;
+      // These ticks do not line up with the tide grid, so give each one its own
+      // dashed guide and edge tick in the river colour to show which height it marks.
+      ctx.save();
+      ctx.strokeStyle = riverColor;
+      ctx.globalAlpha = 0.45;
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([6, 6]);
+      ctx.beginPath();
+      ctx.moveTo(m.left, y);
+      ctx.lineTo(W - m.right, y);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+      ctx.setLineDash([]);
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(W - m.right - 14, y);
+      ctx.lineTo(W - m.right, y);
+      ctx.stroke();
+      ctx.restore();
       ctx.fillStyle = riverAxisText;
       ctx.font = '28px sans-serif';
       ctx.textAlign = 'left';
