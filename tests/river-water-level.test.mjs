@@ -19,7 +19,7 @@ import {
 } from '../js/river-water-level.js';
 
 test('all river stations use commit-free live Pages readings', () => {
-  assert.equal(Object.keys(RIVER_STATIONS).length, 6);
+  assert.equal(Object.keys(RIVER_STATIONS).length, 7);
   for (const [id, station] of Object.entries(RIVER_STATIONS)) {
     assert.equal(station.url, `${RIVER_LIVE_BASE_URL}/${id}/recent_10min.json`);
   }
