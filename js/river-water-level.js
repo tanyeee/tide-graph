@@ -26,6 +26,16 @@ export const RIVER_STATIONS = Object.freeze({
     // widened slightly per user feedback after the upper bound shrank.
     fixedRange: Object.freeze({ min: -0.7, max: 0.6 })
   }),
+  'sakakibashi-ue': Object.freeze({
+    id: 'sakakibashi-ue',
+    name: '榊橋上',
+    riverId: 'kuji',
+    riverName: '久慈川水系',
+    url: `${RIVER_LIVE_BASE_URL}/sakakibashi-ue/recent_10min.json`,
+    // Only 2026 data exists for this station (川の防災情報 source). Range =
+    // quiet-period p1 (0.69m) .. max (1.53m) plus margin, rounded to 0.1m.
+    fixedRange: Object.freeze({ min: 0.6, max: 1.7 })
+  }),
   // The following four stations belong to the 涸沼・那珂川水系 group as
   // classified by kuji-waterlevel's config/stations.json (river id
   // "hinuma-nakagawa"), which groups them together rather than splitting
